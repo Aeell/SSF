@@ -122,6 +122,7 @@ export class Game {
         if (this.state.isPlaying) {
             this.state.time += deltaTime;
             this.checkHalfTime();
+            this.checkForGoal();
         }
 
         // Update movement
@@ -244,9 +245,60 @@ export class Game {
         logger.debug('Match started with reset positions');
     }
 
+    checkForGoal() {
+        const ballPos = this.ball.getPosition();
+        const ballVelocity = this.ball.getVelocity();
+
+        // Check home team's goal (z = -15)
+        if (ballPos.z <= -15 && Math.abs(ballPos.x) < 5) {
+            if (ballVelocity.z < 0) { // Ball is moving towards the goal
+                this.scoreGoal('away');
+            }
+        }
+
+        // Check away team's goal (z = 15)
+        if (ballPos.z >= 15 && Math.abs(ballPos.x) < 5) {
+            if (ballVelocity.z > 0) { // Ball is moving towards the goal
+                this.scoreGoal('home');
+            }
+        }
+    }
+
     scoreGoal(team) {
         this.state.score[team]++;
-        logger.info(`Goal scored by ${team} team`, { currentScore: this.state.score });
-        this.resetPositions();
+        logger.info(`Goal scored by ${team} team`, { 
+            currentScore: this.state.score,
+            time: this.state.time,
+            half: this.state.currentHalf
+        });
+
+        // Add celebration effect
+        this.handleGoalCelebration(team);
+
+        // Reset positions after a short delay
+        setTimeout(() => {
+            this.resetPositions();
+        }, 2000);
+    }
+
+    handleGoalCelebration(team) {
+        // Pause game briefly
+        this.state.isPlaying = false;
+
+        // Visual feedback
+        const goalText = document.createElement('div');
+        goalText.className = 'goal-text';
+        goalText.textContent = 'GOAL!';
+        document.body.appendChild(goalText);
+
+        // Remove after animation
+        setTimeout(() => {
+            goalText.remove();
+        }, 2000);
+
+        // Resume game
+        setTimeout(() => {
+            this.state.isPlaying = true;
+        }, 2000);
     }
 } 
