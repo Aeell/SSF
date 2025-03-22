@@ -2,9 +2,11 @@ import { Player } from './Player';
 import { Ball } from './Ball';
 import { Field } from './Field';
 import { Team } from './Team';
+import logger from '../utils/logger';
 
 export class Game {
     constructor(scene, camera) {
+        logger.info('Initializing new game instance');
         this.scene = scene;
         this.camera = camera;
         
@@ -34,21 +36,27 @@ export class Game {
     }
 
     init() {
+        logger.info('Setting up game components');
         // Setup field
         this.field.create();
+        logger.debug('Field created');
 
         // Setup ball
         this.ball.create();
+        logger.debug('Ball created');
 
         // Setup teams
         this.teams.home.create();
         this.teams.away.create();
+        logger.debug('Teams created');
 
         // Setup event listeners
         this.setupEventListeners();
+        logger.debug('Event listeners set up');
 
         // Start game loop
         this.lastTime = performance.now();
+        logger.info('Game initialization complete');
     }
 
     setupEventListeners() {
@@ -84,6 +92,7 @@ export class Game {
         
         this.currentPlayer = team.players[nextIndex];
         this.camera.target = this.currentPlayer.mesh.position;
+        logger.debug(`Switched to player ${nextIndex + 1} on ${this.controlledTeam} team`);
     }
 
     update() {
@@ -141,20 +150,24 @@ export class Game {
     }
 
     endMatch() {
+        logger.info('Ending match', { finalScore: this.state.score });
         this.state.isPlaying = false;
         // Handle match end (show results, etc.)
     }
 
     startMatch() {
+        logger.info('Starting new match');
         this.state.isPlaying = true;
         this.state.time = 0;
         this.state.currentHalf = 1;
         this.state.score = { home: 0, away: 0 };
         this.resetPositions();
+        logger.debug('Match started with reset positions');
     }
 
     scoreGoal(team) {
         this.state.score[team]++;
+        logger.info(`Goal scored by ${team} team`, { currentScore: this.state.score });
         this.resetPositions();
     }
 } 
