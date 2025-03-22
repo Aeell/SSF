@@ -1,32 +1,25 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
+import logger from '../utils/logger';
 
 export class Ball {
     constructor(scene) {
         this.scene = scene;
-        
-        // Ball properties
-        this.radius = 0.5;
+        this.radius = 0.3;
         this.mass = 1;
+        this.restitution = 0.8;
         this.friction = 0.3;
-        this.restitution = 0.7;
+        this.linearDamping = 0.3;
+        this.angularDamping = 0.3;
         
-        // Ball state
-        this.state = {
-            isMoving: false,
-            isCharged: false,
-            chargeLevel: 0,
-            lastTouchedBy: null
-        };
-        
-        // Physics
-        this.body = null;
-        
-        // Visual
-        this.mesh = null;
-        
-        // Create ball
+        // Create ball mesh and physics body
         this.create();
+        
+        logger.debug('Ball created', {
+            radius: this.radius,
+            mass: this.mass,
+            restitution: this.restitution
+        });
     }
 
     create() {
@@ -43,103 +36,98 @@ export class Ball {
         this.scene.add(this.mesh);
 
         // Create physics body
-        const shape = new CANNON.Sphere(this.radius);
         this.body = new CANNON.Body({
             mass: this.mass,
+            shape: new CANNON.Sphere(this.radius),
             material: new CANNON.Material({
                 friction: this.friction,
-                restitution: this.restitution
+                restitution: this.restitution,
+                linearDamping: this.linearDamping,
+                angularDamping: this.angularDamping
             })
         });
-        this.body.addShape(shape);
     }
 
     update(deltaTime) {
         // Update visual position from physics
         this.mesh.position.copy(this.body.position);
         this.mesh.quaternion.copy(this.body.quaternion);
+    }
 
-        // Check if ball is moving
-        const velocity = this.body.velocity;
-        this.state.isMoving = velocity.length() > 0.1;
-
-        // Update charge effects if ball is charged
-        if (this.state.isCharged) {
-            this.updateChargeEffects();
+    kick(direction, power) {
+        if (!direction || !power) {
+            logger.warn('Ball kick failed: Invalid parameters', {
+                direction: direction ? 'valid' : 'invalid',
+                power: power || 0
+            });
+            return false;
         }
-    }
 
-    updateChargeEffects() {
-        // Add visual effects based on charge level
-        const intensity = this.state.chargeLevel;
-        this.mesh.material.emissive.setHex(0xff0000);
-        this.mesh.material.emissiveIntensity = intensity;
-    }
+        try {
+            // Convert direction to force
+            const force = new CANNON.Vec3(
+                direction.x * power,
+                direction.y * power,
+                direction.z * power
+            );
 
-    applyForce(force, point) {
-        this.body.applyForce(force, point);
-    }
+            // Apply force at the ball's center
+            this.body.applyForce(force, this.body.position);
 
-    kick(direction, power, player) {
-        const force = new CANNON.Vec3(
-            direction.x * power,
-            direction.y * power,
-            direction.z * power
-        );
-        this.body.applyForce(force, this.body.position);
-        this.state.lastTouchedBy = player;
-    }
+            logger.info('Ball kicked', {
+                direction: {
+                    x: direction.x,
+                    y: direction.y,
+                    z: direction.z
+                },
+                power: power
+            });
 
-    charge(amount) {
-        this.state.chargeLevel = Math.min(1, this.state.chargeLevel + amount);
-        if (this.state.chargeLevel >= 1) {
-            this.state.isCharged = true;
+            return true;
+        } catch (error) {
+            logger.error('Ball kick failed: Physics error', {
+                error: error.message,
+                direction: {
+                    x: direction.x,
+                    y: direction.y,
+                    z: direction.z
+                },
+                power: power
+            });
+            return false;
         }
-    }
-
-    discharge() {
-        this.state.isCharged = false;
-        this.state.chargeLevel = 0;
-        this.mesh.material.emissiveIntensity = 0;
     }
 
     reset() {
-        // Reset position
-        this.body.position.set(0, this.radius, 0);
-        this.body.velocity.set(0, 0, 0);
-        this.body.angularVelocity.set(0, 0, 0);
-        
-        // Reset state
-        this.state.isMoving = false;
-        this.state.isCharged = false;
-        this.state.chargeLevel = 0;
-        this.state.lastTouchedBy = null;
-        
-        // Reset visual effects
-        this.mesh.material.emissiveIntensity = 0;
+        try {
+            // Reset physics body
+            this.body.position.set(0, this.radius, 0);
+            this.body.velocity.set(0, 0, 0);
+            this.body.angularVelocity.set(0, 0, 0);
+
+            // Reset visual mesh
+            this.mesh.position.copy(this.body.position);
+            this.mesh.quaternion.copy(this.body.quaternion);
+
+            logger.debug('Ball reset to center');
+            return true;
+        } catch (error) {
+            logger.error('Ball reset failed', {
+                error: error.message
+            });
+            return false;
+        }
     }
 
     getPosition() {
-        return this.mesh.position;
+        return this.mesh.position.clone();
     }
 
     getVelocity() {
-        return this.body.velocity;
-    }
-
-    isMoving() {
-        return this.state.isMoving;
-    }
-
-    isCharged() {
-        return this.state.isCharged;
-    }
-
-    getChargeLevel() {
-        return this.state.chargeLevel;
-    }
-
-    getLastTouchedBy() {
-        return this.state.lastTouchedBy;
+        return new THREE.Vector3(
+            this.body.velocity.x,
+            this.body.velocity.y,
+            this.body.velocity.z
+        );
     }
 } 

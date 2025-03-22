@@ -30,6 +30,12 @@ export class Game {
         // Player control
         this.currentPlayer = null;
         this.controlledTeam = 'home';
+        this.movementKeys = {
+            w: false,
+            a: false,
+            s: false,
+            d: false
+        };
 
         // Initialize game
         this.init();
@@ -60,6 +66,21 @@ export class Game {
     }
 
     setupEventListeners() {
+        // Handle movement keys
+        document.addEventListener('keydown', (event) => {
+            const key = event.key.toLowerCase();
+            if (this.movementKeys.hasOwnProperty(key)) {
+                this.movementKeys[key] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (event) => {
+            const key = event.key.toLowerCase();
+            if (this.movementKeys.hasOwnProperty(key)) {
+                this.movementKeys[key] = false;
+            }
+        });
+
         // Handle player switching
         document.addEventListener('keydown', (event) => {
             if (event.key === 'Tab') {
@@ -67,17 +88,24 @@ export class Game {
             }
         });
 
+        // Handle passing
+        document.addEventListener('keydown', (event) => {
+            if (event.key === ' ' && this.currentPlayer) {
+                this.passBall();
+            }
+        });
+
         // Handle ability activation
         document.addEventListener('keydown', (event) => {
             if (this.currentPlayer) {
-                switch(event.key) {
-                    case '1':
+                switch(event.key.toLowerCase()) {
+                    case 'q':
                         this.currentPlayer.activateAbility(0);
                         break;
-                    case '2':
+                    case 'e':
                         this.currentPlayer.activateAbility(1);
                         break;
-                    case '3':
+                    case 'r':
                         this.currentPlayer.activateAbility(2);
                         break;
                 }
@@ -85,25 +113,18 @@ export class Game {
         });
     }
 
-    switchPlayer() {
-        const team = this.teams[this.controlledTeam];
-        const currentIndex = team.players.indexOf(this.currentPlayer);
-        const nextIndex = (currentIndex + 1) % team.players.length;
-        
-        this.currentPlayer = team.players[nextIndex];
-        this.camera.target = this.currentPlayer.mesh.position;
-        logger.debug(`Switched to player ${nextIndex + 1} on ${this.controlledTeam} team`);
-    }
-
-    update() {
-        const currentTime = performance.now();
-        const deltaTime = (currentTime - this.lastTime) / 1000;
-        this.lastTime = currentTime;
-
+    update(deltaTime) {
         // Update game state
         if (this.state.isPlaying) {
             this.state.time += deltaTime;
             this.checkHalfTime();
+        }
+
+        // Update movement
+        if (this.currentPlayer) {
+            const x = (this.movementKeys.d ? 1 : 0) - (this.movementKeys.a ? 1 : 0);
+            const z = (this.movementKeys.s ? 1 : 0) - (this.movementKeys.w ? 1 : 0);
+            this.currentPlayer.setMovement(x, z);
         }
 
         // Update game objects
@@ -117,6 +138,54 @@ export class Game {
         if (this.currentPlayer) {
             this.currentPlayer.update(deltaTime);
         }
+    }
+
+    passBall() {
+        if (!this.currentPlayer) {
+            logger.warn('Pass failed: No current player');
+            return;
+        }
+
+        const team = this.teams[this.controlledTeam];
+        const target = this.currentPlayer.findNearestTeammate(team.players);
+        
+        if (this.currentPlayer.passBall(this.ball, target)) {
+            // Auto-switch to target player
+            this.switchToPlayer(target);
+        }
+    }
+
+    switchToPlayer(player) {
+        if (!player) {
+            logger.warn('Player switch failed: Invalid target player');
+            return false;
+        }
+
+        // Unset current player
+        if (this.currentPlayer) {
+            this.currentPlayer.setControlled(false);
+        }
+
+        // Set new player
+        this.currentPlayer = player;
+        this.currentPlayer.setControlled(true);
+        this.camera.target = this.currentPlayer.mesh.position;
+
+        logger.info('Player switched', {
+            from: this.currentPlayer?.id,
+            to: player.id,
+            team: this.controlledTeam
+        });
+
+        return true;
+    }
+
+    switchPlayer() {
+        const team = this.teams[this.controlledTeam];
+        const currentIndex = team.players.indexOf(this.currentPlayer);
+        const nextIndex = (currentIndex + 1) % team.players.length;
+        
+        return this.switchToPlayer(team.players[nextIndex]);
     }
 
     checkHalfTime() {
