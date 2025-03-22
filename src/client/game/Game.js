@@ -2,6 +2,7 @@ import { Player } from './Player';
 import { Ball } from './Ball';
 import { Field } from './Field';
 import { Team } from './Team';
+import { AIController } from './ai/AIController';
 import logger from '../utils/logger';
 
 export class Game {
@@ -26,6 +27,9 @@ export class Game {
             home: new Team(scene, 'home'),
             away: new Team(scene, 'away')
         };
+
+        // AI Controller
+        this.aiController = new AIController(this);
 
         // Player control
         this.currentPlayer = null;
@@ -134,6 +138,9 @@ export class Game {
         this.teams.home.update(deltaTime);
         this.teams.away.update(deltaTime);
 
+        // Update AI
+        this.aiController.update(deltaTime);
+
         // Update current player
         if (this.currentPlayer) {
             this.currentPlayer.update(deltaTime);
@@ -216,6 +223,9 @@ export class Game {
         // Reset team positions
         this.teams.home.resetPositions();
         this.teams.away.resetPositions();
+
+        // Reset AI controller
+        this.aiController.reset();
     }
 
     endMatch() {
