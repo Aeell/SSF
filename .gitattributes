@@ -1,0 +1,101 @@
+# Auto detect text files and perform LF normalization
+* text=auto
+
+# JavaScript files
+*.js text
+*.jsx text
+*.ts text
+*.tsx text
+
+# JSON files
+*.json text
+
+# CSS files
+*.css text
+*.scss text
+*.sass text
+*.less text
+
+# HTML files
+*.html text
+*.htm text
+
+# Markdown files
+*.md text diff=markdown
+*.markdown text diff=markdown
+
+# Documentation
+*.txt text
+*.pdf binary
+*.doc binary
+*.docx binary
+*.xls binary
+*.xlsx binary
+*.ppt binary
+*.pptx binary
+
+# Graphics
+*.png binary
+*.jpg binary
+*.gif binary
+*.ico binary
+*.svg text
+
+# Fonts
+*.ttf binary
+*.eot binary
+*.woff binary
+*.woff2 binary
+
+# Scripts
+*.sh text eol=lf
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# Config files
+*.ini text
+*.conf text
+*.config text
+*.yml text
+*.yaml text
+*.xml text
+*.properties text
+
+# Logs
+*.log text
+
+# Database
+*.sql text
+*.sqlite binary
+
+# Environment files
+.env* text
+!.env.example
+
+# Dependencies
+package-lock.json text
+yarn.lock text
+pnpm-lock.yaml text
+
+# Build output
+dist/ binary
+build/ binary
+out/ binary
+
+# IDE and editor files
+.idea/ binary
+.vscode/ binary
+*.swp binary
+*.swo binary
+.DS_Store binary
+Thumbs.db binary
+
+# Test coverage
+coverage/ binary
+
+# Temporary files
+tmp/ binary
+temp/ binary
+
+# Debug files
+.debug/ binary 

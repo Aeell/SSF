@@ -10,6 +10,11 @@ import net from "net";
 import { logger } from "./utils/logger.js";
 import crypto from "crypto";
 import helmet from "helmet";
+import { BettingRoom } from './rooms/BettingRoom.js';
+import { PROTECTION_CONFIG } from './config/protection.js';
+import { monitor } from '@colyseus/monitor';
+import colyseusCore from '@colyseus/core';
+const { Server: ColyseusServer } = colyseusCore;
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 // Port management
@@ -152,6 +157,22 @@ const io = new Server(httpServer, {
   maxHttpBufferSize: 1e8,
   connectTimeout: 45000,
 });
+
+// Colyseus setup
+const gameServer = new ColyseusServer({
+  server: httpServer,
+  verifyClient: (info) => {
+    // Add any client verification logic here
+    return true;
+  }
+});
+
+// Define the betting room
+gameServer.define('betting', BettingRoom);
+
+// Add Colyseus monitor
+app.use('/colyseus', monitor());
+
 // Socket.IO event handlers with improved error handling
 io.on("connection", (socket) => {
   const startTime = Date.now();
@@ -276,3 +297,9 @@ const startServer = async () => {
   }
 };
 startServer();
+
+// Error handling middleware
+app.use((err, req, res, next) => {
+    console.error(err.stack);
+    res.status(500).send('Something broke!');
+});

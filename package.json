@@ -1,70 +1,81 @@
 {
-  "name": "super-slam-football",
+  "name": "football-special-abilities",
   "version": "1.0.0",
+  "description": "A multiplayer football game with special abilities, betting system, and AI players",
   "type": "module",
-  "description": "A multiplayer football game with special abilities",
   "main": "src/server/index.js",
   "scripts": {
-    "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "node scripts/start-server.js",
-    "dev:client": "vite",
-    "build": "vite build",
-    "preview": "vite preview",
-    "start": "node scripts/start-server.js",
+    "start": "node src/server/index.js",
+    "dev": "nodemon src/server/index.js",
+    "build": "webpack --mode production",
     "test": "jest",
-    "lint": "eslint src/",
-    "format": "prettier --write \"src/**/*.{js,jsx,json,css}\"",
-    "clean": "rimraf dist/ && node scripts/clean.js",
-    "analyze": "webpack-bundle-analyzer stats.json",
-    "check": "npm run lint && npm run format && npm run clean"
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "lint:fix": "eslint . --fix",
+    "format": "prettier --write .",
+    "prepare": "husky install"
   },
+  "dependencies": {
+    "colyseus": "^0.15.0",
+    "express": "^4.18.2",
+    "three": "^0.161.0",
+    "cannon-es": "^0.20.0",
+    "winston": "^3.11.0",
+    "chart.js": "^4.4.1",
+    "socket.io": "^4.7.4",
+    "dotenv": "^16.4.1",
+    "compression": "^1.7.4",
+    "helmet": "^7.1.0",
+    "cors": "^2.8.5",
+    "rate-limiter-flexible": "^2.4.1"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.23.9",
+    "@babel/preset-env": "^7.23.9",
+    "@jest/globals": "^29.7.0",
+    "babel-jest": "^29.7.0",
+    "eslint": "^8.56.0",
+    "eslint-config-prettier": "^9.1.0",
+    "eslint-plugin-jest": "^27.6.3",
+    "husky": "^8.0.3",
+    "jest": "^29.7.0",
+    "lint-staged": "^15.2.0",
+    "nodemon": "^3.0.3",
+    "prettier": "^3.2.4",
+    "supertest": "^6.3.4",
+    "webpack": "^5.90.1",
+    "webpack-cli": "^5.1.4",
+    "webpack-dev-server": "^4.15.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "author": "Your Name",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/yourusername/football-special-abilities.git"
+  },
+  "bugs": {
+    "url": "https://github.com/yourusername/football-special-abilities/issues"
+  },
+  "homepage": "https://github.com/yourusername/football-special-abilities#readme",
   "keywords": [
     "game",
     "football",
     "multiplayer",
-    "websocket",
+    "real-time",
+    "webgl",
     "threejs"
   ],
-  "author": "",
-  "license": "ISC",
-  "dependencies": {
-    "cannon-es": "^0.20.0",
-    "colyseus": "^0.15.57",
-    "colyseus.js": "^0.15.27",
-    "cors": "^2.8.5",
-    "express": "^4.21.2",
-    "helmet": "^7.2.0",
-    "socket.io": "^4.8.1",
-    "three": "^0.157.0",
-    "winston": "^3.17.0"
-  },
-  "devDependencies": {
-    "@babel/core": "^7.24.0",
-    "@babel/plugin-transform-runtime": "^7.24.0",
-    "@babel/preset-env": "^7.24.0",
-    "@babel/runtime": "^7.24.0",
-    "@colyseus/monitor": "^0.15.8",
-    "babel-loader": "^9.1.3",
-    "concurrently": "^8.2.2",
-    "css-loader": "^6.10.0",
-    "css-minimizer-webpack-plugin": "^6.0.0",
-    "eslint": "^8.57.0",
-    "eslint-config-prettier": "^9.1.0",
-    "html-webpack-plugin": "^5.6.0",
-    "jest": "^29.7.0",
-    "mini-css-extract-plugin": "^2.8.1",
-    "nodemon": "^3.1.0",
-    "prettier": "^3.2.5",
-    "rimraf": "^5.0.5",
-    "style-loader": "^3.3.4",
-    "terser-webpack-plugin": "^5.3.10",
-    "vite": "^5.4.14",
-    "webpack": "^5.90.3",
-    "webpack-bundle-analyzer": "^4.10.1",
-    "webpack-cli": "^5.1.4",
-    "webpack-dev-server": "^5.0.2"
-  },
-  "engines": {
-    "node": ">=18.0.0"
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
   }
 }

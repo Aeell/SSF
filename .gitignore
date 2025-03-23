@@ -7,7 +7,7 @@ yarn-error.log*
 # Build output
 dist/
 build/
-*.tsbuildinfo
+out/
 
 # Environment variables
 .env
@@ -22,21 +22,31 @@ build/
 .DS_Store
 Thumbs.db
 
-# Test coverage
-coverage/
-
 # Logs
 logs/
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Test coverage
+coverage/
 
 # Temporary files
 tmp/
 temp/
 
-# Cache
-.cache/
-.npm/
-.eslintcache
+# Debug files
+.debug/
+
+# System Files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
 
 # Optional npm cache directory
 .npm
@@ -71,8 +81,4 @@ out
 .serverless/
 
 # Local Netlify folder
-.netlify
-
-# Production build files
-build/
-dist/ 
+.netlify 

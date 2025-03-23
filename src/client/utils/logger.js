@@ -1,4 +1,4 @@
-// Enhanced browser-compatible logger with persistence
+// Enhanced browser-compatible logger with persistence and performance monitoring
 const LOG_LEVELS = {
   DEBUG: 0,
   INFO: 1,
@@ -11,6 +11,8 @@ class Logger {
     this.history = [];
     this.maxHistory = 1000;
     this.errorCallbacks = new Set();
+    this.performanceTimers = new Map();
+    this.setupGlobalErrorHandlers();
   }
   setLevel(level) {
     this.level = LOG_LEVELS[level] || LOG_LEVELS.DEBUG;
@@ -46,69 +48,68 @@ class Logger {
     }
     return value;
   }
+  setupGlobalErrorHandlers() {
+    window.onerror = (message, source, lineno, colno, error) => {
+      this.error('Uncaught error', error, { source, lineno, colno });
+    };
+    window.onunhandledrejection = (event) => {
+      this.error('Unhandled promise rejection', event.reason);
+    };
+  }
   onError(callback) {
     this.errorCallbacks.add(callback);
   }
   debug(message, data) {
     if (this.level <= LOG_LEVELS.DEBUG) {
-      );
+      const formattedMessage = this.formatMessage('DEBUG', message, data);
+      console.debug(formattedMessage);
     }
   }
   info(message, data) {
     if (this.level <= LOG_LEVELS.INFO) {
-      );
+      const formattedMessage = this.formatMessage('INFO', message, data);
+      console.info(formattedMessage);
     }
   }
   warn(message, data) {
     if (this.level <= LOG_LEVELS.WARN) {
-      );
+      const formattedMessage = this.formatMessage('WARN', message, data);
+      console.warn(formattedMessage);
     }
   }
   error(message, error, context = {}) {
     if (this.level <= LOG_LEVELS.ERROR) {
-      const errorData = {
-        error: error instanceof Error ? error : new Error(error),
-        context
-      };
-      );
-      this.errorCallbacks.forEach(callback => callback(message, errorData));
+      const formattedMessage = this.formatMessage('ERROR', message, { error, ...context });
+      console.error(formattedMessage);
+      this.errorCallbacks.forEach(callback => callback(error, context));
     }
   }
   getHistory(level) {
-    return level 
-      ? this.history.filter(entry => entry.level === level)
-      : this.history;
+    return this.history.filter(entry => !level || entry.level === level);
   }
   clearHistory() {
     this.history = [];
   }
-  // Performance monitoring
   startPerformanceTimer(label) {
-    if (!window.performance) return;
-    performance.mark(`${label}-start`);
+    this.performanceTimers.set(label, performance.now());
   }
   endPerformanceTimer(label) {
-    if (!window.performance) return;
-    performance.mark(`${label}-end`);
-    performance.measure(label, `${label}-start`, `${label}-end`);
-    const measurement = performance.getEntriesByName(label).pop();
-    this.debug(`Performance [${label}]`, { duration: measurement.duration });
-    return measurement.duration;
+    const startTime = this.performanceTimers.get(label);
+    if (startTime) {
+      const duration = performance.now() - startTime;
+      this.debug(`Performance [${label}]`, { duration: `${duration.toFixed(2)}ms` });
+      this.performanceTimers.delete(label);
+    }
+  }
+  logMemoryUsage() {
+    if (performance.memory) {
+      const memory = performance.memory;
+      this.debug('Memory usage', {
+        usedJSHeapSize: `${(memory.usedJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+        totalJSHeapSize: `${(memory.totalJSHeapSize / 1024 / 1024).toFixed(2)}MB`,
+        jsHeapSizeLimit: `${(memory.jsHeapSizeLimit / 1024 / 1024).toFixed(2)}MB`
+      });
+    }
   }
 }
-const logger = new Logger();
-// Add global error handling
-window.addEventListener('error', (event) => {
-  logger.error('Uncaught error', event.error, {
-    message: event.message,
-    filename: event.filename,
-    lineno: event.lineno,
-    colno: event.colno
-  });
-});
-window.addEventListener('unhandledrejection', (event) => {
-  logger.error('Unhandled promise rejection', event.reason, {
-    promise: event.promise
-  });
-});
-export default logger; 
+export const logger = new Logger(); 

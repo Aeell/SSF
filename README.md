@@ -1,28 +1,42 @@
-# Super Slam Football
+# Football Special Abilities Game
 
-A multiplayer football game with special abilities, built with Three.js and Colyseus.
+A multiplayer football game with special abilities, betting system, and AI players. Built with modern web technologies and real-time multiplayer capabilities.
 
 ## Features
 
-- Real-time multiplayer gameplay
-- Special abilities and power-ups
-- 3D graphics with Three.js
-- Physics-based gameplay with Cannon.js
-- Responsive UI with React
-- Performance monitoring and optimization
+### Core Game Features
+- Real-time multiplayer football gameplay
+- Special abilities system with unique player powers
+- AI player system with advanced decision-making
+- Betting system with odds calculation
+- Physics-based ball and player movement
 
-## Prerequisites
+### Performance Monitoring
+- Real-time performance metrics tracking
+- Memory usage monitoring
+- Performance trend analysis
+- Automated alert system
+- Interactive performance dashboard
 
-- Node.js 18.0.0 or higher
-- npm 9.0.0 or higher
-- Modern web browser with WebGL support
+### Technical Features
+- ES Modules architecture
+- Real-time communication using Colyseus
+- Comprehensive test suite
+- Advanced logging system
+- Performance optimization
 
-## Installation
+## Getting Started
 
+### Prerequisites
+- Node.js (v14 or higher)
+- npm or yarn
+- Modern web browser
+
+### Installation
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/super-slam-football.git
-cd super-slam-football
+git clone https://github.com/yourusername/football-special-abilities.git
+cd football-special-abilities
 ```
 
 2. Install dependencies:
@@ -37,45 +51,64 @@ npm run dev
 
 4. Open your browser and navigate to `http://localhost:3000`
 
-## Development
+## Project Structure
 
-### Available Scripts
+```
+src/
+├── client/           # Client-side code
+│   ├── components/   # React components
+│   ├── game/        # Game logic
+│   └── utils/       # Utility functions
+├── server/          # Server-side code
+│   ├── game/        # Game server logic
+│   ├── models/      # Data models
+│   └── utils/       # Utility functions
+└── shared/          # Shared code between client and server
+    ├── constants/   # Shared constants
+    └── types/       # TypeScript type definitions
+```
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run test` - Run tests
-- `npm run lint` - Run linting
-- `npm run format` - Format code
-- `npm run clean` - Clean and format codebase
-- `npm run start` - Start production server
+## Performance Monitoring
 
-### Project Structure
+The project includes a sophisticated performance monitoring system that tracks:
 
-See [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md) for detailed project structure and documentation.
+### Metrics
+- Operation durations
+- Memory usage
+- CPU utilization
+- Network latency
+- Frame rates
+
+### Analysis
+- Performance trends
+- Statistical analysis (p95, p99)
+- Memory leak detection
+- Bottleneck identification
+
+### Dashboard
+- Real-time metrics visualization
+- Interactive charts
+- Alert system
+- Historical data analysis
 
 ## Testing
 
-1. Run unit tests:
+### Running Tests
 ```bash
 npm test
 ```
 
-2. Run integration tests:
+### Test Coverage
 ```bash
-npm run test:integration
-```
-
-3. Run end-to-end tests:
-```bash
-npm run test:e2e
+npm run test:coverage
 ```
 
 ## Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
 5. Open a Pull Request
 
 ## License
@@ -86,9 +119,32 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - Three.js for 3D graphics
 - Colyseus for multiplayer functionality
-- Cannon.js for physics simulation
-- React for UI components
+- Chart.js for data visualization
+- Jest for testing framework
+
+## Performance Optimization Tips
+
+1. Use the performance monitoring dashboard to identify bottlenecks
+2. Implement proper cleanup in game objects
+3. Optimize network communication
+4. Use object pooling for frequently created objects
+5. Implement proper memory management
 
 ## Support
 
-For support, please open an issue in the GitHub repository or contact the development team. 
+For support, email support@example.com or join our Discord server.
+
+## Roadmap
+
+- [ ] Add more special abilities
+- [ ] Implement tournament system
+- [ ] Add spectator mode
+- [ ] Enhance AI behavior
+- [ ] Add more betting options
+- [ ] Implement achievements system
+- [ ] Add social features
+- [ ] Mobile optimization
+
+## Changelog
+
+See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version history. 

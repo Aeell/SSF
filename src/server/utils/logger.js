@@ -25,11 +25,17 @@ const logger = winston.createLogger({
     new winston.transports.File({
       filename: path.join(logsDir, "error.log"),
       level: "error",
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+      tailable: true
     }),
     // Write all logs to combined.log
     new winston.transports.File({
       filename: path.join(logsDir, "combined.log"),
-    }),
+      maxsize: 5242880, // 5MB
+      maxFiles: 5,
+      tailable: true
+    })
   ],
 });
 // Add console transport in development
@@ -47,46 +53,82 @@ if (process.env.NODE_ENV !== "production") {
 const performance = {
   timers: new Map(),
   metrics: new Map(),
+  history: new Map(),
   startTimer(name) {
     this.timers.set(name, process.hrtime());
   },
   endTimer(name) {
-    const start = this.timers.get(name);
-    if (!start) return 0;
-    const [seconds, nanoseconds] = process.hrtime(start);
-    const duration = seconds * 1000 + nanoseconds / 1e6; // Convert to milliseconds
-    // Store metric
-    if (!this.metrics.has(name)) {
-      this.metrics.set(name, {
-        count: 0,
-        total: 0,
-        min: duration,
-        max: duration,
-        last: duration,
+    const startTime = this.timers.get(name);
+    if (startTime) {
+      const [seconds, nanoseconds] = process.hrtime(startTime);
+      const duration = seconds * 1000 + nanoseconds / 1000000; // Convert to milliseconds
+      this.timers.delete(name);
+      
+      // Update metrics
+      if (!this.metrics.has(name)) {
+        this.metrics.set(name, {
+          count: 0,
+          totalDuration: 0,
+          minDuration: Infinity,
+          maxDuration: 0
+        });
+      }
+      
+      const metric = this.metrics.get(name);
+      metric.count++;
+      metric.totalDuration += duration;
+      metric.minDuration = Math.min(metric.minDuration, duration);
+      metric.maxDuration = Math.max(metric.maxDuration, duration);
+      
+      // Add to history
+      if (!this.history.has(name)) {
+        this.history.set(name, []);
+      }
+      this.history.get(name).push({
+        timestamp: Date.now(),
+        duration
       });
+      
+      // Keep only last 100 measurements
+      if (this.history.get(name).length > 100) {
+        this.history.get(name).shift();
+      }
+      
+      logger.debug(`Performance [${name}]`, { duration: `${duration.toFixed(2)}ms` });
+      return duration;
     }
-    const metric = this.metrics.get(name);
-    metric.count++;
-    metric.total += duration;
-    metric.min = Math.min(metric.min, duration);
-    metric.max = Math.max(metric.max, duration);
-    metric.last = duration;
-    this.timers.delete(name);
-    return duration;
+    return null;
   },
   getMetrics() {
     const result = {};
     for (const [name, metric] of this.metrics) {
       result[name] = {
-        ...metric,
-        average: metric.total / metric.count,
+        count: metric.count,
+        averageDuration: metric.totalDuration / metric.count,
+        minDuration: metric.minDuration,
+        maxDuration: metric.maxDuration,
+        recentHistory: this.history.get(name)
       };
     }
     return result;
   },
   clearMetrics() {
-    this.metrics.clear();
     this.timers.clear();
-  },
+    this.metrics.clear();
+    this.history.clear();
+  }
 };
-export { logger, performance };
+// Memory monitoring
+const memory = {
+  getUsage() {
+    const usage = process.memoryUsage();
+    return {
+      heapUsed: `${(usage.heapUsed / 1024 / 1024).toFixed(2)}MB`,
+      heapTotal: `${(usage.heapTotal / 1024 / 1024).toFixed(2)}MB`,
+      external: `${(usage.external / 1024 / 1024).toFixed(2)}MB`,
+      rss: `${(usage.rss / 1024 / 1024).toFixed(2)}MB`
+    };
+  }
+};
+// Export enhanced logger
+export { logger, performance, memory };
