@@ -13,8 +13,11 @@ body {
 }
 
 #game-container {
+    position: relative;
     width: 100vw;
     height: 100vh;
+    overflow: hidden;
+    background-color: #1a1a1a;
 }
 
 #loading-screen {
@@ -44,6 +47,329 @@ body {
 }
 
 .error-message {
+    position: fixed;
+    top: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 0, 0, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 1001;
+    animation: slideDown 0.3s ease-out;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+.critical-error {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    background: rgba(0, 0, 0, 0.95);
+    color: white;
+    padding: 20px;
+    border-radius: 10px;
+    font-family: monospace;
+    text-align: center;
+    z-index: 1002;
+    animation: fadeIn 0.3s ease-out;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.3);
+    min-width: 300px;
+}
+
+.critical-error h3 {
+    color: #ff4444;
+    margin: 0 0 15px 0;
+    font-size: 20px;
+}
+
+.critical-error p {
+    margin: 0 0 20px 0;
+    line-height: 1.5;
+}
+
+.critical-error button {
+    background: #ff4444;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: background 0.2s;
+}
+
+.critical-error button:hover {
+    background: #ff6666;
+}
+
+/* Mode selection */
+#mode-select {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    text-align: center;
+    color: white;
+    z-index: 1000;
+}
+
+#mode-select h1 {
+    font-size: 3rem;
+    margin-bottom: 2rem;
+    text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+}
+
+.mode-buttons {
+    display: flex;
+    gap: 1rem;
+    justify-content: center;
+}
+
+.mode-buttons button {
+    padding: 1rem 2rem;
+    font-size: 1.2rem;
+    border: none;
+    border-radius: 5px;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.mode-buttons button:hover {
     color: #ff4444;
     font-weight: bold;
+}
+
+/* Debug Panel */
+#debug-panel {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    width: 300px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+    display: none;
+}
+
+.debug-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    padding-bottom: 5px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.debug-header h3 {
+    margin: 0;
+    font-size: 14px;
+}
+
+.debug-content {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.debug-section {
+    background: rgba(255, 255, 255, 0.1);
+    padding: 8px;
+    border-radius: 3px;
+}
+
+.debug-section h4 {
+    margin: 0 0 5px 0;
+    font-size: 12px;
+    color: #4CAF50;
+}
+
+.debug-section label {
+    display: block;
+    margin: 3px 0;
+    cursor: pointer;
+}
+
+.debug-section input[type="checkbox"] {
+    margin-right: 5px;
+}
+
+.debug-section button {
+    background: #4CAF50;
+    border: none;
+    color: white;
+    padding: 5px 10px;
+    margin: 3px;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.debug-section button:hover {
+    background: #45a049;
+}
+
+#debug-info {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+.ai-player {
+    background: rgba(255, 255, 255, 0.05);
+    padding: 5px;
+    margin: 3px 0;
+    border-radius: 3px;
+}
+
+/* Physics Visualization */
+.physics-debug {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 1;
+}
+
+.physics-debug .collider {
+    stroke: rgba(255, 0, 0, 0.5);
+    stroke-width: 1;
+    fill: none;
+}
+
+.physics-debug .grid {
+    stroke: rgba(255, 255, 255, 0.1);
+    stroke-width: 0.5;
+    fill: none;
+}
+
+/* Performance Overlay */
+#performance-overlay {
+    position: fixed;
+    top: 10px;
+    left: 10px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    font-family: monospace;
+    font-size: 12px;
+    padding: 10px;
+    border-radius: 5px;
+    z-index: 1000;
+}
+
+.performance-metric {
+    margin: 2px 0;
+}
+
+.performance-metric.warning {
+    color: #ffa500;
+}
+
+.performance-metric.error {
+    color: #ff4444;
+}
+
+/* Performance Warnings */
+.performance-warning {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(255, 165, 0, 0.9);
+    color: white;
+    padding: 10px 20px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 1001;
+    animation: slideIn 0.3s ease-out;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+}
+
+/* Animations */
+@keyframes slideDown {
+    from {
+        transform: translate(-50%, -100%);
+    }
+    to {
+        transform: translate(-50%, 0);
+    }
+}
+
+@keyframes slideIn {
+    from {
+        transform: translateX(100%);
+    }
+    to {
+        transform: translateX(0);
+    }
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+        transform: translate(-50%, -60%);
+    }
+    to {
+        opacity: 1;
+        transform: translate(-50%, -50%);
+    }
+}
+
+/* Game State UI */
+.game-state {
+    position: fixed;
+    top: 20px;
+    left: 20px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 10px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 14px;
+    z-index: 1000;
+}
+
+.game-state.paused {
+    background: rgba(255, 165, 0, 0.8);
+}
+
+.game-state.game-over {
+    background: rgba(255, 0, 0, 0.8);
+}
+
+/* Auto-save Indicator */
+.auto-save {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    background: rgba(0, 255, 0, 0.9);
+    color: white;
+    padding: 5px 10px;
+    border-radius: 3px;
+    font-family: monospace;
+    font-size: 12px;
+    z-index: 1000;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.auto-save.visible {
+    opacity: 1;
 } 

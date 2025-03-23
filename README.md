@@ -1,27 +1,21 @@
 # Super Slam Football
 
-A multiplayer football game with special abilities, built using Three.js and Cannon.js.
+A multiplayer football game with special abilities, built with Three.js and Colyseus.
 
 ## Features
 
 - Real-time multiplayer gameplay
-- Physics-based ball and player interactions
-- Dynamic camera system
-- Goal detection and scoring
-- Special abilities (coming soon)
-
-## Tech Stack
-
-- Three.js for 3D graphics
-- Cannon.js for physics simulation
-- Colyseus.js for multiplayer networking
-- Vite for build and development
-- Node.js for server runtime
+- Special abilities and power-ups
+- 3D graphics with Three.js
+- Physics-based gameplay with Cannon.js
+- Responsive UI with React
+- Performance monitoring and optimization
 
 ## Prerequisites
 
-- Node.js >= 18.0.0
-- npm >= 9.0.0
+- Node.js 18.0.0 or higher
+- npm 9.0.0 or higher
+- Modern web browser with WebGL support
 
 ## Installation
 
@@ -36,44 +30,44 @@ cd super-slam-football
 npm install
 ```
 
-## Development
-
-Start the development server:
+3. Start the development server:
 ```bash
 npm run dev
 ```
 
-The game will be available at `http://localhost:3000`
+4. Open your browser and navigate to `http://localhost:3000`
 
-## Building for Production
+## Development
 
-Build the project:
+### Available Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run test` - Run tests
+- `npm run lint` - Run linting
+- `npm run format` - Format code
+- `npm run clean` - Clean and format codebase
+- `npm run start` - Start production server
+
+### Project Structure
+
+See [PROJECT_DOCUMENTATION.md](PROJECT_DOCUMENTATION.md) for detailed project structure and documentation.
+
+## Testing
+
+1. Run unit tests:
 ```bash
-npm run build
+npm test
 ```
 
-Start the production server:
+2. Run integration tests:
 ```bash
-npm start
+npm run test:integration
 ```
 
-## Controls
-
-- WASD: Move player
-- Space: Jump
-- Mouse: Look around (coming soon)
-- Special abilities (coming soon)
-
-## Project Structure
-
-```
-src/
-├── client/          # Client-side code
-│   ├── core/       # Core game engine
-│   ├── entities/   # Game entities
-│   ├── assets/     # Game assets
-│   └── utils/      # Utility functions
-└── server/         # Server-side code
+3. Run end-to-end tests:
+```bash
+npm run test:e2e
 ```
 
 ## Contributing
@@ -90,6 +84,11 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## Acknowledgments
 
-- Three.js team for the amazing 3D graphics library
-- Cannon.js team for the physics engine
-- Colyseus.js team for the multiplayer framework 
+- Three.js for 3D graphics
+- Colyseus for multiplayer functionality
+- Cannon.js for physics simulation
+- React for UI components
+
+## Support
+
+For support, please open an issue in the GitHub repository or contact the development team. 

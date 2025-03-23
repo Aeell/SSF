@@ -6,16 +6,17 @@
   "main": "src/server/index.js",
   "scripts": {
     "dev": "concurrently \"npm run dev:server\" \"npm run dev:client\"",
-    "dev:server": "node src/server/index.js",
+    "dev:server": "node scripts/start-server.js",
     "dev:client": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "start": "node src/server/index.js",
+    "start": "node scripts/start-server.js",
     "test": "jest",
     "lint": "eslint src/",
     "format": "prettier --write \"src/**/*.{js,jsx,json,css}\"",
-    "clean": "rimraf dist/",
-    "analyze": "webpack-bundle-analyzer stats.json"
+    "clean": "rimraf dist/ && node scripts/clean.js",
+    "analyze": "webpack-bundle-analyzer stats.json",
+    "check": "npm run lint && npm run format && npm run clean"
   },
   "keywords": [
     "game",
@@ -33,7 +34,9 @@
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "helmet": "^7.2.0",
-    "three": "^0.157.0"
+    "socket.io": "^4.8.1",
+    "three": "^0.157.0",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0",

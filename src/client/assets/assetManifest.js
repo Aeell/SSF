@@ -1,9 +1,9 @@
 export const assetManifest = {
   models: {
-    ball: '/assets/ball.glb',
-    player: '/assets/player.glb',
+    ball: "/assets/ball.glb",
+    player: "/assets/player.glb",
   },
   textures: {
-    field: '/assets/field.jpg',
+    field: "/assets/field.jpg",
   },
-}; 
+};

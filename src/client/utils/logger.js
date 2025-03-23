@@ -5,7 +5,6 @@ const LOG_LEVELS = {
   WARN: 2,
   ERROR: 3
 };
-
 class Logger {
   constructor() {
     this.level = LOG_LEVELS.DEBUG;
@@ -13,11 +12,9 @@ class Logger {
     this.maxHistory = 1000;
     this.errorCallbacks = new Set();
   }
-
   setLevel(level) {
     this.level = LOG_LEVELS[level] || LOG_LEVELS.DEBUG;
   }
-
   formatMessage(level, message, data) {
     const timestamp = new Date().toISOString();
     const logEntry = {
@@ -26,15 +23,12 @@ class Logger {
       message,
       data
     };
-    
     this.history.push(logEntry);
     if (this.history.length > this.maxHistory) {
       this.history.shift();
     }
-
     return `[${timestamp}] [${level}] ${message} ${data ? JSON.stringify(data, this.jsonReplacer) : ''}`;
   }
-
   jsonReplacer(key, value) {
     if (value instanceof Error) {
       return {
@@ -52,56 +46,47 @@ class Logger {
     }
     return value;
   }
-
   onError(callback) {
     this.errorCallbacks.add(callback);
   }
-
   debug(message, data) {
     if (this.level <= LOG_LEVELS.DEBUG) {
-      console.debug(this.formatMessage('DEBUG', message, data));
+      );
     }
   }
-
   info(message, data) {
     if (this.level <= LOG_LEVELS.INFO) {
-      console.info(this.formatMessage('INFO', message, data));
+      );
     }
   }
-
   warn(message, data) {
     if (this.level <= LOG_LEVELS.WARN) {
-      console.warn(this.formatMessage('WARN', message, data));
+      );
     }
   }
-
   error(message, error, context = {}) {
     if (this.level <= LOG_LEVELS.ERROR) {
       const errorData = {
         error: error instanceof Error ? error : new Error(error),
         context
       };
-      console.error(this.formatMessage('ERROR', message, errorData));
+      );
       this.errorCallbacks.forEach(callback => callback(message, errorData));
     }
   }
-
   getHistory(level) {
     return level 
       ? this.history.filter(entry => entry.level === level)
       : this.history;
   }
-
   clearHistory() {
     this.history = [];
   }
-
   // Performance monitoring
   startPerformanceTimer(label) {
     if (!window.performance) return;
     performance.mark(`${label}-start`);
   }
-
   endPerformanceTimer(label) {
     if (!window.performance) return;
     performance.mark(`${label}-end`);
@@ -111,9 +96,7 @@ class Logger {
     return measurement.duration;
   }
 }
-
 const logger = new Logger();
-
 // Add global error handling
 window.addEventListener('error', (event) => {
   logger.error('Uncaught error', event.error, {
@@ -123,11 +106,9 @@ window.addEventListener('error', (event) => {
     colno: event.colno
   });
 });
-
 window.addEventListener('unhandledrejection', (event) => {
   logger.error('Unhandled promise rejection', event.reason, {
     promise: event.promise
   });
 });
-
 export default logger; 
