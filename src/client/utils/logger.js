@@ -1,108 +1,133 @@
 // Enhanced browser-compatible logger with persistence
 const LOG_LEVELS = {
-  ERROR: 'error',
-  WARN: 'warn',
-  INFO: 'info',
-  DEBUG: 'debug'
+  DEBUG: 0,
+  INFO: 1,
+  WARN: 2,
+  ERROR: 3
 };
 
 class Logger {
-  constructor(options = {}) {
-    this.level = options.level || LOG_LEVELS.INFO;
-    this.prefix = options.prefix || '';
-    this.logs = [];
-    this.maxLogs = options.maxLogs || 1000;
-
-    // Initialize storage
-    try {
-      this.loadLogsFromStorage();
-    } catch (e) {
-      console.error('Failed to load logs from storage:', e);
-    }
+  constructor() {
+    this.level = LOG_LEVELS.DEBUG;
+    this.history = [];
+    this.maxHistory = 1000;
+    this.errorCallbacks = new Set();
   }
 
-  loadLogsFromStorage() {
-    try {
-      const savedLogs = localStorage.getItem('game_logs');
-      if (savedLogs) {
-        this.logs = JSON.parse(savedLogs);
-      }
-    } catch (e) {
-      console.error('Failed to load logs from storage:', e);
-    }
+  setLevel(level) {
+    this.level = LOG_LEVELS[level] || LOG_LEVELS.DEBUG;
   }
 
-  saveLogsToStorage() {
-    try {
-      localStorage.setItem('game_logs', JSON.stringify(this.logs.slice(-this.maxLogs)));
-    } catch (e) {
-      console.error('Failed to save logs to storage:', e);
-    }
-  }
-
-  formatMessage(level, message, ...args) {
+  formatMessage(level, message, data) {
     const timestamp = new Date().toISOString();
-    const formattedArgs = args.map(arg => 
-      typeof arg === 'object' ? JSON.stringify(arg) : String(arg)
-    ).join(' ');
-    return `[${timestamp}] [${level.toUpperCase()}] ${this.prefix}${message} ${formattedArgs}`.trim();
+    const logEntry = {
+      timestamp,
+      level,
+      message,
+      data
+    };
+    
+    this.history.push(logEntry);
+    if (this.history.length > this.maxHistory) {
+      this.history.shift();
+    }
+
+    return `[${timestamp}] [${level}] ${message} ${data ? JSON.stringify(data, this.jsonReplacer) : ''}`;
   }
 
-  log(level, message, ...args) {
-    const formattedMessage = this.formatMessage(level, message, ...args);
-    this.logs.push({ timestamp: Date.now(), level, message: formattedMessage });
-    this.saveLogsToStorage();
-    return formattedMessage;
+  jsonReplacer(key, value) {
+    if (value instanceof Error) {
+      return {
+        name: value.name,
+        message: value.message,
+        stack: value.stack,
+        cause: value.cause
+      };
+    }
+    if (value instanceof THREE.Vector3 || value instanceof CANNON.Vec3) {
+      return `Vector3(${value.x}, ${value.y}, ${value.z})`;
+    }
+    if (value instanceof THREE.Quaternion || value instanceof CANNON.Quaternion) {
+      return `Quaternion(${value.x}, ${value.y}, ${value.z}, ${value.w})`;
+    }
+    return value;
   }
 
-  error(message, ...args) {
-    const formattedMessage = this.log(LOG_LEVELS.ERROR, message, ...args);
-    console.error(formattedMessage);
+  onError(callback) {
+    this.errorCallbacks.add(callback);
   }
 
-  warn(message, ...args) {
-    const formattedMessage = this.log(LOG_LEVELS.WARN, message, ...args);
-    console.warn(formattedMessage);
+  debug(message, data) {
+    if (this.level <= LOG_LEVELS.DEBUG) {
+      console.debug(this.formatMessage('DEBUG', message, data));
+    }
   }
 
-  info(message, ...args) {
-    const formattedMessage = this.log(LOG_LEVELS.INFO, message, ...args);
-    console.info(formattedMessage);
+  info(message, data) {
+    if (this.level <= LOG_LEVELS.INFO) {
+      console.info(this.formatMessage('INFO', message, data));
+    }
   }
 
-  debug(message, ...args) {
-    const formattedMessage = this.log(LOG_LEVELS.DEBUG, message, ...args);
-    console.debug(formattedMessage);
+  warn(message, data) {
+    if (this.level <= LOG_LEVELS.WARN) {
+      console.warn(this.formatMessage('WARN', message, data));
+    }
   }
 
-  getLogs() {
-    return this.logs;
+  error(message, error, context = {}) {
+    if (this.level <= LOG_LEVELS.ERROR) {
+      const errorData = {
+        error: error instanceof Error ? error : new Error(error),
+        context
+      };
+      console.error(this.formatMessage('ERROR', message, errorData));
+      this.errorCallbacks.forEach(callback => callback(message, errorData));
+    }
   }
 
-  exportLogs() {
-    const blob = new Blob([JSON.stringify(this.logs, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `game_logs_${new Date().toISOString()}.json`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+  getHistory(level) {
+    return level 
+      ? this.history.filter(entry => entry.level === level)
+      : this.history;
   }
 
-  clearLogs() {
-    this.logs = [];
-    this.saveLogsToStorage();
+  clearHistory() {
+    this.history = [];
+  }
+
+  // Performance monitoring
+  startPerformanceTimer(label) {
+    if (!window.performance) return;
+    performance.mark(`${label}-start`);
+  }
+
+  endPerformanceTimer(label) {
+    if (!window.performance) return;
+    performance.mark(`${label}-end`);
+    performance.measure(label, `${label}-start`, `${label}-end`);
+    const measurement = performance.getEntriesByName(label).pop();
+    this.debug(`Performance [${label}]`, { duration: measurement.duration });
+    return measurement.duration;
   }
 }
 
-// Create default logger instance
-const logger = new Logger({
-  prefix: '[Game] ',
-  maxLogs: 1000
+const logger = new Logger();
+
+// Add global error handling
+window.addEventListener('error', (event) => {
+  logger.error('Uncaught error', event.error, {
+    message: event.message,
+    filename: event.filename,
+    lineno: event.lineno,
+    colno: event.colno
+  });
 });
 
-// Export both the logger instance and the class
-export { Logger };
+window.addEventListener('unhandledrejection', (event) => {
+  logger.error('Unhandled promise rejection', event.reason, {
+    promise: event.promise
+  });
+});
+
 export default logger; 

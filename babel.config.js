@@ -1,4 +1,4 @@
-module.exports = {
+export default {
   presets: [
     [
       '@babel/preset-env',
@@ -9,9 +9,14 @@ module.exports = {
         },
         useBuiltIns: 'usage',
         corejs: 3,
-        modules: false
+        modules: 'auto'
       }
     ]
   ],
-  plugins: ['@babel/plugin-transform-runtime']
+  plugins: [
+    ['@babel/plugin-transform-runtime', {
+      regenerator: true,
+      corejs: 3
+    }]
+  ]
 }; 

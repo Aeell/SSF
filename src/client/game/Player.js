@@ -1,97 +1,232 @@
 import * as THREE from 'three';
 import * as CANNON from 'cannon-es';
-import { Ability } from './abilities/Ability';
-import logger from '../utils/logger';
+import { Ability } from './abilities/Ability.js';
+import { logger } from '../utils/logger.js';
 
 export class Player {
     constructor(scene, role, position, team) {
-        this.scene = scene;
-        this.role = role;
-        this.position = position;
-        this.team = team;
-        this.isControlled = false;
-        this.speed = 5;
-        this.movement = new THREE.Vector3();
-        this.abilities = this.initializeAbilities();
-        this.stamina = 100;
-        this.staminaRegenRate = 5;
-        this.staminaDrainRate = 10;
-        
-        // Physics body
-        this.body = new CANNON.Body({
-            mass: 1,
-            position: new CANNON.Vec3(position.x, position.y, position.z),
-            shape: new CANNON.Sphere(0.5)
-        });
-        
-        // Create player mesh
-        this.create();
-        
-        logger.debug('Player created', { 
-            role, 
-            position, 
-            team,
-            abilities: this.abilities.map(a => a.name)
-        });
+        try {
+            if (!scene || !(scene instanceof THREE.Scene)) {
+                throw new Error('Player requires valid THREE.Scene');
+            }
+            
+            this.scene = scene;
+            this.role = role;
+            this.position = position;
+            this.team = team;
+            this.isControlled = false;
+            this.speed = 5;
+            this.movement = new THREE.Vector3();
+            this.abilities = this.initializeAbilities();
+            this.stamina = 100;
+            this.staminaRegenRate = 5;
+            this.staminaDrainRate = 10;
+            
+            // Create physics body
+            this.createPhysicsBody();
+            
+            // Create visual mesh
+            this.createMesh();
+            
+            logger.debug('Player created', { 
+                role, 
+                position, 
+                team,
+                abilities: this.abilities.map(a => a.name)
+            });
+        } catch (error) {
+            logger.error('Failed to create player:', {
+                error: error.message,
+                stack: error.stack,
+                details: {
+                    hasScene: !!scene,
+                    role,
+                    team
+                }
+            });
+            throw error;
+        }
     }
 
-    create() {
-        const geometry = new THREE.SphereGeometry(0.5, 32, 32);
-        const material = new THREE.MeshStandardMaterial({ 
-            color: this.team === 'home' ? 0x0000ff : 0xff0000,
-            roughness: 0.5,
-            metalness: 0.5
-        });
-        this.mesh = new THREE.Mesh(geometry, material);
-        this.mesh.position.copy(this.position);
-        this.mesh.castShadow = true;
-        this.mesh.receiveShadow = true;
-        this.scene.add(this.mesh);
+    createPhysicsBody() {
+        try {
+            this.body = new CANNON.Body({
+                mass: 1,
+                position: new CANNON.Vec3(this.position.x, this.position.y, this.position.z),
+                shape: new CANNON.Sphere(0.5)
+            });
+            
+            logger.debug('Player physics body created', {
+                mass: this.body.mass,
+                position: this.body.position
+            });
+        } catch (error) {
+            logger.error('Failed to create player physics body:', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
+    }
+
+    createMesh() {
+        try {
+            const geometry = new THREE.SphereGeometry(0.5, 32, 32);
+            const material = new THREE.MeshStandardMaterial({ 
+                color: this.team === 'home' ? 0x0000ff : 0xff0000,
+                roughness: 0.5,
+                metalness: 0.5
+            });
+            
+            this.mesh = new THREE.Mesh(geometry, material);
+            this.mesh.position.copy(this.position);
+            this.mesh.castShadow = true;
+            this.mesh.receiveShadow = true;
+            this.scene.add(this.mesh);
+            
+            logger.debug('Player mesh created', {
+                team: this.team,
+                position: this.mesh.position
+            });
+        } catch (error) {
+            logger.error('Failed to create player mesh:', {
+                error: error.message,
+                stack: error.stack
+            });
+            throw error;
+        }
     }
 
     initializeAbilities() {
-        const abilities = [];
-        switch(this.role) {
-            case 'attacker':
-                abilities.push(
-                    new Ability('Jiggle', 10000, 0.75), // 10s cooldown, 75% dodge
-                    new Ability('Speed Boost', 15000, 0.5),
-                    new Ability('Super Shot', 30000, 0.25)
-                );
-                break;
-            case 'defender':
-                abilities.push(
-                    new Ability('Shield', 15000, 0.6),
-                    new Ability('Tackle', 20000, 0.4),
-                    new Ability('Wall', 25000, 0.3)
-                );
-                break;
-            case 'goalkeeper':
-                abilities.push(
-                    new Ability('Save', 10000, 0.8),
-                    new Ability('Energy Wall', 20000, 0.5),
-                    new Ability('Super Save', 30000, 0.2)
-                );
-                break;
+        try {
+            // Initialize abilities based on role
+            const abilities = [];
+            switch (this.role) {
+                case 'striker':
+                    abilities.push(new Ability('sprint', 20));
+                    abilities.push(new Ability('powerShot', 30));
+                    break;
+                case 'midfielder':
+                    abilities.push(new Ability('tackle', 15));
+                    abilities.push(new Ability('pass', 10));
+                    break;
+                case 'defender':
+                    abilities.push(new Ability('slide', 25));
+                    abilities.push(new Ability('block', 20));
+                    break;
+                default:
+                    abilities.push(new Ability('sprint', 15));
+            }
+            
+            logger.debug('Player abilities initialized', {
+                role: this.role,
+                abilities: abilities.map(a => a.name)
+            });
+            
+            return abilities;
+        } catch (error) {
+            logger.error('Failed to initialize player abilities:', {
+                error: error.message,
+                stack: error.stack,
+                role: this.role
+            });
+            throw error;
         }
-        return abilities;
     }
 
     update(deltaTime) {
-        // Update position from physics
-        this.mesh.position.copy(this.body.position);
-        
-        // Update abilities
-        this.abilities.forEach(ability => ability.update(deltaTime));
-        
-        // Regenerate stamina
-        if (this.stamina < 100) {
-            this.stamina = Math.min(100, this.stamina + this.staminaRegenRate * deltaTime);
+        try {
+            // Update physics
+            if (this.body) {
+                this.mesh.position.copy(this.body.position);
+                this.mesh.quaternion.copy(this.body.quaternion);
+            }
+            
+            // Update stamina
+            if (this.isControlled) {
+                this.stamina = Math.max(0, this.stamina - this.staminaDrainRate * deltaTime);
+            } else {
+                this.stamina = Math.min(100, this.stamina + this.staminaRegenRate * deltaTime);
+            }
+            
+            // Update abilities cooldowns
+            this.abilities.forEach(ability => ability.update(deltaTime));
+        } catch (error) {
+            logger.error('Failed to update player:', {
+                error: error.message,
+                stack: error.stack,
+                details: {
+                    deltaTime,
+                    hasBody: !!this.body,
+                    hasMesh: !!this.mesh,
+                    stamina: this.stamina
+                }
+            });
         }
-        
-        // Update movement if controlled
-        if (this.isControlled) {
-            this.updateMovement();
+    }
+
+    useAbility(abilityName) {
+        try {
+            const ability = this.abilities.find(a => a.name === abilityName);
+            if (!ability) {
+                throw new Error(`Ability ${abilityName} not found`);
+            }
+            
+            if (ability.isOnCooldown()) {
+                logger.warn('Ability on cooldown:', {
+                    ability: abilityName,
+                    remainingCooldown: ability.getRemainingCooldown()
+                });
+                return false;
+            }
+            
+            if (this.stamina < ability.staminaCost) {
+                logger.warn('Not enough stamina for ability:', {
+                    ability: abilityName,
+                    currentStamina: this.stamina,
+                    requiredStamina: ability.staminaCost
+                });
+                return false;
+            }
+            
+            // Use the ability
+            ability.use();
+            this.stamina -= ability.staminaCost;
+            
+            logger.debug('Ability used:', {
+                ability: abilityName,
+                remainingStamina: this.stamina
+            });
+            
+            return true;
+        } catch (error) {
+            logger.error('Failed to use ability:', {
+                error: error.message,
+                stack: error.stack,
+                ability: abilityName
+            });
+            return false;
+        }
+    }
+
+    cleanup() {
+        try {
+            if (this.mesh) {
+                this.scene.remove(this.mesh);
+                this.mesh.geometry.dispose();
+                this.mesh.material.dispose();
+            }
+            
+            logger.debug('Player cleanup complete');
+        } catch (error) {
+            logger.error('Failed to cleanup player:', {
+                error: error.message,
+                stack: error.stack,
+                details: {
+                    hasMesh: !!this.mesh,
+                    hasScene: !!this.scene
+                }
+            });
         }
     }
 

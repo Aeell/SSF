@@ -1,6 +1,6 @@
-import { Game } from '../game/Game';
+import { Game } from '../game/Game.js';
 import { Scene, Camera } from 'three';
-import logger from '../utils/logger';
+import { logger } from '../utils/logger.js';
 
 describe('Game', () => {
     let game;

@@ -1,207 +1,307 @@
-const express = require('express');
-const http = require('http');
-const socketIO = require('socket.io');
-const path = require('path');
-const { v4: uuidv4 } = require('uuid');
+import express from 'express';
+import { createServer } from 'http';
+import { Server } from 'socket.io';
+import path from 'path';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+import fs from 'fs';
+import cors from 'cors';
+import net from 'net';
+import { logger } from './utils/logger.js';
+import crypto from 'crypto';
+import helmet from 'helmet';
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Port management
+const DEFAULT_PORT = 3001;
+const MAX_PORT_ATTEMPTS = 10;
+
+const checkPort = (port) => {
+    return new Promise((resolve, reject) => {
+        const tester = net.createServer()
+            .once('error', err => {
+                if (err.code === 'EADDRINUSE') {
+                    logger.warn(`Port ${port} in use, trying next port`);
+                    resolve(false);
+                } else {
+                    reject(err);
+                }
+            })
+            .once('listening', () => {
+                tester.once('close', () => resolve(true))
+                    .close();
+            })
+            .listen(port);
+    });
+};
+
+const findAvailablePort = async (startPort) => {
+    for (let port = startPort; port < startPort + MAX_PORT_ATTEMPTS; port++) {
+        try {
+            const available = await checkPort(port);
+            if (available) {
+                return port;
+            }
+        } catch (err) {
+            logger.error('Error checking port:', err);
+        }
+    }
+    throw new Error('No available ports found');
+};
+
+// Express app setup
 const app = express();
-const server = http.createServer(app);
-const io = socketIO(server, {
-    cors: {
-        origin: "http://localhost:8080",
-        methods: ["GET", "POST"]
+const httpServer = createServer(app);
+
+// Generate nonce for CSP
+app.use((req, res, next) => {
+    res.locals.nonce = crypto.randomBytes(16).toString('base64');
+    next();
+});
+
+const isDevelopment = process.env.NODE_ENV === 'development';
+
+// Security middleware configuration
+if (isDevelopment) {
+    // Development mode - minimal security
+    app.use(helmet({
+        contentSecurityPolicy: false,
+        crossOriginEmbedderPolicy: false,
+        crossOriginResourcePolicy: false,
+        crossOriginOpenerPolicy: false
+    }));
+} else {
+    // Production mode - strict security
+    app.use(helmet({
+        contentSecurityPolicy: {
+            directives: {
+                defaultSrc: ["'self'"],
+                scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+                styleSrc: ["'self'", "'unsafe-inline'"],
+                imgSrc: ["'self'", "data:", "blob:"],
+                connectSrc: ["'self'", "ws:", "wss:", "http:", "https:"],
+                fontSrc: ["'self'", "data:"],
+                objectSrc: ["'none'"],
+                mediaSrc: ["'self'"],
+                workerSrc: ["'self'", "blob:"],
+                childSrc: ["'self'"],
+                frameSrc: ["'self'"]
+            }
+        }
+    }));
+}
+
+// Configure CORS
+app.use(cors({
+    origin: true, // Allow all origins in development
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With']
+}));
+
+// Middleware
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+
+// Health check endpoint
+app.get('/api/health', (req, res) => {
+    res.json({ 
+        status: 'ok', 
+        timestamp: new Date().toISOString(),
+        uptime: process.uptime(),
+        connections: io ? io.engine.clientsCount : 0
+    });
+});
+
+// Static file serving
+app.use(express.static(path.join(__dirname, '../../dist')));
+app.use('/assets', express.static(path.join(__dirname, '../../assets')));
+
+// Create logs directory
+const logsDir = path.join(__dirname, '../../logs');
+if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
+}
+
+// API Routes
+app.get('/api/logs', (req, res) => {
+    try {
+        const logs = {
+            error: fs.existsSync(path.join(logsDir, 'error.log')) 
+                ? fs.readFileSync(path.join(logsDir, 'error.log'), 'utf8') 
+                : '',
+            combined: fs.existsSync(path.join(logsDir, 'combined.log'))
+                ? fs.readFileSync(path.join(logsDir, 'combined.log'), 'utf8')
+                : ''
+        };
+        res.json(logs);
+    } catch (error) {
+        logger.error('Failed to retrieve logs:', error);
+        res.status(500).json({ error: 'Failed to retrieve logs' });
     }
 });
 
-// Serve static files from the dist directory
-app.use(express.static(path.join(__dirname, '../../dist')));
-
-// Handle all other routes by serving index.html
-app.get('*', (req, res) => {
-    res.sendFile(path.join(__dirname, '../../dist/index.html'));
+// Socket.IO setup with improved configuration
+const io = new Server(httpServer, {
+    path: '/socket.io',
+    cors: {
+        origin: true, // Allow all origins in development
+        methods: ['GET', 'POST'],
+        credentials: true,
+        allowedHeaders: ['Content-Type', 'Authorization']
+    },
+    transports: ['websocket', 'polling'],
+    pingTimeout: 60000,
+    pingInterval: 25000,
+    upgradeTimeout: 30000,
+    allowUpgrades: true,
+    perMessageDeflate: false,
+    maxHttpBufferSize: 1e8,
+    connectTimeout: 45000
 });
 
-// Game state
-const rooms = new Map();
-const players = new Map();
-
-// Socket.IO connection handling
+// Socket.IO event handlers with improved error handling
 io.on('connection', (socket) => {
-    console.log('New client connected');
+    const startTime = Date.now();
+    const clientInfo = {
+        socketId: socket.id,
+        transport: socket.conn.transport.name,
+        address: socket.handshake.address,
+        timestamp: new Date().toISOString()
+    };
+    
+    logger.info('Client connected:', clientInfo);
 
-    // Generate unique player ID
-    const playerId = uuidv4();
-    players.set(socket.id, {
-        id: playerId,
-        socket: socket,
-        roomId: null
+    // Send initial connection acknowledgment
+    socket.emit('connection:established', {
+        socketId: socket.id,
+        timestamp: new Date().toISOString()
     });
 
-    // Send player ID to client
-    socket.emit('playerId', playerId);
-
-    // Handle room creation
-    socket.on('createRoom', () => {
-        const roomId = uuidv4();
-        rooms.set(roomId, {
-            id: roomId,
-            host: playerId,
-            players: new Set([playerId]),
-            gameState: {
-                isPlaying: false,
-                score: { home: 0, away: 0 },
-                time: 0,
-                currentHalf: 1,
-                isHalfTime: false
-            }
-        });
-
-        // Update player's room
-        const player = players.get(socket.id);
-        player.roomId = roomId;
-
-        // Send room ID to client
-        socket.emit('roomId', roomId);
-        socket.join(roomId);
-
-        // Notify other players in the room
-        socket.to(roomId).emit('playerJoined', {
-            id: playerId,
-            isHost: true
+    // Handle transport change
+    socket.conn.on('upgrade', (transport) => {
+        logger.info('Transport upgraded:', {
+            socketId: socket.id,
+            from: socket.conn.transport.name,
+            to: transport.name
         });
     });
 
-    // Handle room joining
-    socket.on('joinRoom', (roomId) => {
-        const room = rooms.get(roomId);
-        if (room && room.players.size < 12) { // Max 6v6 players
-            room.players.add(playerId);
+    socket.on('error', (error) => {
+        logger.error('Socket error:', { socketId: socket.id, error });
+        // Notify client of error
+        socket.emit('server:error', { message: 'Internal server error' });
+    });
 
-            // Update player's room
-            const player = players.get(socket.id);
-            player.roomId = roomId;
+    socket.on('disconnect', (reason) => {
+        const duration = Date.now() - startTime;
+        logger.info('Client disconnected:', { 
+            socketId: socket.id,
+            reason,
+            duration: `${duration}ms`
+        });
+        // Notify other clients
+        socket.broadcast.emit('player:left', { socketId: socket.id });
+    });
 
-            // Join socket room
-            socket.join(roomId);
+    // Ping/Pong for latency checks
+    socket.on('ping', () => {
+        socket.emit('pong', { timestamp: Date.now() });
+    });
 
-            // Send room ID to client
-            socket.emit('roomId', roomId);
-
-            // Send current game state to new player
-            socket.emit('gameState', room.gameState);
-
-            // Notify other players
-            socket.to(roomId).emit('playerJoined', {
-                id: playerId,
-                isHost: false
-            });
+    // Game events
+    socket.on('game:join', (data) => {
+        try {
+            const playerInfo = {
+                socketId: socket.id,
+                joinTime: Date.now(),
+                ...data
+            };
+            logger.info('Player joined:', playerInfo);
+            
+            // Acknowledge join
+            socket.emit('game:joined', playerInfo);
+            
+            // Notify others
+            socket.broadcast.emit('player:joined', playerInfo);
+        } catch (error) {
+            logger.error('Error in game:join:', { socketId: socket.id, error });
+            socket.emit('game:error', { message: 'Failed to join game' });
         }
     });
 
-    // Handle room leaving
-    socket.on('leaveRoom', (roomId) => {
-        const room = rooms.get(roomId);
-        if (room) {
-            room.players.delete(playerId);
-
-            // Update player's room
-            const player = players.get(socket.id);
-            player.roomId = null;
-
-            // Leave socket room
-            socket.leave(roomId);
-
-            // Notify other players
-            socket.to(roomId).emit('playerLeft', playerId);
-
-            // Clean up empty rooms
-            if (room.players.size === 0) {
-                rooms.delete(roomId);
-            }
+    socket.on('game:update', (data) => {
+        try {
+            const gameState = {
+                timestamp: Date.now(),
+                player: socket.id,
+                ...data
+            };
+            socket.broadcast.emit('game:state', gameState);
+        } catch (error) {
+            logger.error('Error in game:update:', { socketId: socket.id, error });
+            socket.emit('game:error', { message: 'Failed to update game state' });
         }
-    });
-
-    // Handle game start
-    socket.on('startGame', (roomId) => {
-        const room = rooms.get(roomId);
-        if (room && room.host === playerId) {
-            room.gameState.isPlaying = true;
-            room.gameState.time = 0;
-            room.gameState.currentHalf = 1;
-            room.gameState.score = { home: 0, away: 0 };
-
-            // Broadcast game start to all players
-            io.to(roomId).emit('gameState', room.gameState);
-        }
-    });
-
-    // Handle game end
-    socket.on('endGame', (roomId) => {
-        const room = rooms.get(roomId);
-        if (room) {
-            room.gameState.isPlaying = false;
-            io.to(roomId).emit('gameState', room.gameState);
-        }
-    });
-
-    // Handle player updates
-    socket.on('playerUpdate', (data) => {
-        const room = rooms.get(data.roomId);
-        if (room) {
-            // Broadcast player update to other players in the room
-            socket.to(data.roomId).emit('playerUpdate', {
-                playerId: data.playerId,
-                position: data.position,
-                state: data.state
-            });
-        }
-    });
-
-    // Handle ball updates
-    socket.on('ballUpdate', (data) => {
-        const room = rooms.get(data.roomId);
-        if (room) {
-            // Broadcast ball update to all players in the room
-            io.to(data.roomId).emit('ballUpdate', {
-                position: data.position,
-                state: data.state
-            });
-        }
-    });
-
-    // Handle goal scoring
-    socket.on('goal', (data) => {
-        const room = rooms.get(data.roomId);
-        if (room) {
-            room.gameState.score[data.team]++;
-            io.to(data.roomId).emit('goal', {
-                team: data.team,
-                score: room.gameState.score
-            });
-        }
-    });
-
-    // Handle disconnection
-    socket.on('disconnect', () => {
-        const player = players.get(socket.id);
-        if (player && player.roomId) {
-            const room = rooms.get(player.roomId);
-            if (room) {
-                room.players.delete(player.id);
-                socket.to(player.roomId).emit('playerLeft', player.id);
-
-                // Clean up empty rooms
-                if (room.players.size === 0) {
-                    rooms.delete(player.roomId);
-                }
-            }
-        }
-        players.delete(socket.id);
     });
 });
 
-// Start server
-const PORT = process.env.PORT || 3000;
-server.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
-}); 
+// Graceful shutdown handling
+const shutdown = (signal) => {
+    logger.info(`Received ${signal}, starting graceful shutdown...`);
+
+    // Set a timeout for forceful shutdown
+    const forceShutdown = setTimeout(() => {
+        logger.error('Forceful shutdown initiated after timeout');
+        process.exit(1);
+    }, 30000);
+
+    // Close Socket.IO connections
+    io.close(() => {
+        logger.info('Socket.IO server closed');
+        
+        // Close HTTP server
+        httpServer.close(() => {
+            logger.info('HTTP server closed');
+            clearTimeout(forceShutdown);
+            process.exit(0);
+        });
+    });
+};
+
+// Handle various shutdown signals
+process.on('SIGTERM', () => shutdown('SIGTERM'));
+process.on('SIGINT', () => shutdown('SIGINT'));
+process.on('uncaughtException', (error) => {
+    logger.error('Uncaught exception:', error);
+    shutdown('uncaughtException');
+});
+process.on('unhandledRejection', (reason, promise) => {
+    logger.error('Unhandled rejection:', { reason, promise });
+    shutdown('unhandledRejection');
+});
+
+// Start server with port management
+const startServer = async () => {
+    try {
+        const port = await findAvailablePort(DEFAULT_PORT);
+        
+        httpServer.listen(port, () => {
+            logger.info(`Server running on port ${port}`);
+            
+            // Log server configuration
+            logger.info('Server configuration:', {
+                nodeEnv: process.env.NODE_ENV,
+                port,
+                corsOrigins: cors.origin,
+                socketIOPath: io.path()
+            });
+        });
+    } catch (error) {
+        logger.error('Failed to start server:', error);
+        process.exit(1);
+    }
+};
+
+startServer();

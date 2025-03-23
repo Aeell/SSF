@@ -1,188 +1,136 @@
-import { THREE } from '../utils/three';
-import logger from '../utils/logger';
-import Player from './Player';
-import Ball from './Ball';
-import Field from './Field';
-import { Team } from './Team';
-import { AIController } from './ai/AIController';
+import * as THREE from 'three';
+import { logger } from '../utils/logger.js';
 
-export default class Game {
-    constructor(scene, camera, networkManager) {
+export class Game {
+    constructor() {
+        this.initialized = false;
+        this.loadingManager = new THREE.LoadingManager();
+        this.setupLoadingManager();
+    }
+
+    setupLoadingManager() {
+        this.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+            const progress = (itemsLoaded / itemsTotal) * 100;
+            const progressBar = document.getElementById('progress-bar-fill');
+            const loadingText = document.getElementById('loading-text');
+            if (progressBar) progressBar.style.width = `${progress}%`;
+            if (loadingText) loadingText.textContent = `Loading: ${Math.round(progress)}%`;
+            logger.info(`Loading progress: ${progress}% (${itemsLoaded}/${itemsTotal})`);
+        };
+
+        this.loadingManager.onLoad = () => {
+            logger.info('All assets loaded successfully');
+            this.hideLoadingScreen();
+        };
+
+        this.loadingManager.onError = (url) => {
+            logger.error('Error loading asset:', url);
+            const loadingText = document.getElementById('loading-text');
+            if (loadingText) {
+                loadingText.textContent = 'Error loading game assets';
+                loadingText.style.color = '#ff4444';
+            }
+        };
+    }
+
+    async init() {
         try {
-            logger.info('Initializing game components...');
+            logger.info('Initializing game...');
             
-            this.scene = scene;
-            this.camera = camera;
-            this.networkManager = networkManager;
+            // Create scene
+            this.scene = new THREE.Scene();
+            this.scene.background = new THREE.Color(0x000000);
+
+            // Create camera
+            this.camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+            this.camera.position.set(0, 10, 20);
+            this.camera.lookAt(0, 0, 0);
+
+            // Create renderer
+            this.renderer = new THREE.WebGLRenderer({ antialias: true });
+            this.renderer.setSize(window.innerWidth, window.innerHeight);
+            this.renderer.setPixelRatio(window.devicePixelRatio);
             
-            // Initialize game state
-            this.players = new Map();
-            this.ball = null;
-            this.field = null;
-            this.clock = new THREE.Clock();
+            // Add to DOM
+            const container = document.getElementById('game-container');
+            if (container) {
+                container.appendChild(this.renderer.domElement);
+            } else {
+                throw new Error('Game container not found');
+            }
+
+            // Add basic lighting
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+            this.scene.add(ambientLight);
+
+            const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
+            directionalLight.position.set(5, 5, 5);
+            this.scene.add(directionalLight);
+
+            // Add a simple ground plane for testing
+            const groundGeometry = new THREE.PlaneGeometry(20, 20);
+            const groundMaterial = new THREE.MeshStandardMaterial({ color: 0x00ff00 });
+            const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+            ground.rotation.x = -Math.PI / 2;
+            this.scene.add(ground);
+
+            // Handle window resize
+            window.addEventListener('resize', this.onWindowResize.bind(this));
+
+            this.initialized = true;
+            logger.info('Game initialized successfully');
             
-            this.initializeGameComponents();
-            logger.info('Game components initialized successfully');
+            // Start render loop
+            this.animate();
+            
         } catch (error) {
-            logger.error('Failed to initialize game:', error);
+            logger.error('Error initializing game:', error);
+            this.showError('Failed to initialize game');
             throw error;
         }
     }
 
-    initializeGameComponents() {
+    animate() {
+        if (!this.initialized) return;
+        
+        requestAnimationFrame(this.animate.bind(this));
+        
         try {
-            // Create field
-            this.field = new Field(this.scene);
-            logger.debug('Field created');
-
-            // Create ball
-            this.ball = new Ball(this.scene);
-            logger.debug('Ball created');
-
-            // Setup network event handlers
-            this.setupNetworkHandlers();
-            logger.debug('Network handlers setup complete');
+            this.renderer.render(this.scene, this.camera);
         } catch (error) {
-            logger.error('Failed to initialize game components:', error);
-            throw error;
+            logger.error('Error in animation loop:', error);
+            this.initialized = false;
         }
     }
 
-    setupNetworkHandlers() {
-        try {
-            this.networkManager.on('playerJoined', (data) => {
-                logger.info('Player joined:', data.id);
-                this.addPlayer(data);
-            });
+    onWindowResize() {
+        if (!this.initialized) return;
+        
+        this.camera.aspect = window.innerWidth / window.innerHeight;
+        this.camera.updateProjectionMatrix();
+        this.renderer.setSize(window.innerWidth, window.innerHeight);
+    }
 
-            this.networkManager.on('playerLeft', (playerId) => {
-                logger.info('Player left:', playerId);
-                this.removePlayer(playerId);
-            });
-
-            this.networkManager.on('gameState', (state) => {
-                this.updateGameState(state);
-            });
-
-            logger.debug('Network handlers initialized');
-        } catch (error) {
-            logger.error('Failed to setup network handlers:', error);
-            throw error;
+    hideLoadingScreen() {
+        const loadingScreen = document.getElementById('loading-screen');
+        if (loadingScreen) {
+            loadingScreen.style.opacity = '0';
+            setTimeout(() => {
+                loadingScreen.style.display = 'none';
+            }, 500);
         }
     }
 
-    addPlayer(playerData) {
-        try {
-            const player = new Player(this.scene, playerData);
-            this.players.set(playerData.id, player);
-            logger.debug('Player added:', playerData.id);
-        } catch (error) {
-            logger.error('Failed to add player:', error);
+    showError(message) {
+        const loadingText = document.getElementById('loading-text');
+        if (loadingText) {
+            loadingText.textContent = message;
+            loadingText.style.color = '#ff4444';
         }
+        logger.error(message);
     }
+}
 
-    removePlayer(playerId) {
-        try {
-            const player = this.players.get(playerId);
-            if (player) {
-                player.cleanup();
-                this.players.delete(playerId);
-                logger.debug('Player removed:', playerId);
-            }
-        } catch (error) {
-            logger.error('Failed to remove player:', error);
-        }
-    }
-
-    updateGameState(state) {
-        try {
-            // Update ball position
-            if (state.ball) {
-                this.ball.setPosition(state.ball.position);
-                this.ball.setVelocity(state.ball.velocity);
-            }
-
-            // Update players
-            state.players.forEach((playerState) => {
-                const player = this.players.get(playerState.id);
-                if (player) {
-                    player.updateState(playerState);
-                }
-            });
-        } catch (error) {
-            logger.error('Failed to update game state:', error);
-        }
-    }
-
-    update() {
-        try {
-            const deltaTime = this.clock.getDelta();
-
-            // Update all game components
-            this.players.forEach(player => player.update(deltaTime));
-            this.ball.update(deltaTime);
-
-            // Update physics
-            this.updatePhysics(deltaTime);
-        } catch (error) {
-            logger.error('Game update error:', error);
-        }
-    }
-
-    updatePhysics(deltaTime) {
-        try {
-            // Ball-player collisions
-            this.players.forEach(player => {
-                if (this.ball.checkCollision(player)) {
-                    this.handleBallCollision(player);
-                }
-            });
-
-            // Ball-field collisions
-            this.field.checkBallCollision(this.ball);
-        } catch (error) {
-            logger.error('Physics update error:', error);
-        }
-    }
-
-    handleBallCollision(player) {
-        try {
-            // Calculate new ball velocity based on player's movement
-            const ballVelocity = this.ball.getVelocity();
-            const playerVelocity = player.getVelocity();
-            
-            // Apply collision response
-            this.ball.setVelocity({
-                x: ballVelocity.x + playerVelocity.x * 0.5,
-                y: ballVelocity.y + playerVelocity.y * 0.5,
-                z: ballVelocity.z + playerVelocity.z * 0.5
-            });
-
-            logger.debug('Ball collision handled with player:', player.id);
-        } catch (error) {
-            logger.error('Failed to handle ball collision:', error);
-        }
-    }
-
-    cleanup() {
-        try {
-            // Cleanup all players
-            this.players.forEach(player => player.cleanup());
-            this.players.clear();
-
-            // Cleanup ball
-            if (this.ball) {
-                this.ball.cleanup();
-            }
-
-            // Cleanup field
-            if (this.field) {
-                this.field.cleanup();
-            }
-
-            logger.info('Game cleanup complete');
-        } catch (error) {
-            logger.error('Failed to cleanup game:', error);
-        }
-    }
-} 
+// Create and export a single instance
+const game = new Game();
+export default game; 
