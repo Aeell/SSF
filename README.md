@@ -1,39 +1,27 @@
-# Super Slam Football (SSF)
+# Super Slam Football
 
-A 6v6 football game with unique abilities, blending FIFA-like gameplay with over-the-top effects and strategic depth.
+A multiplayer football game with special abilities, built using Three.js and Cannon.js.
 
 ## Features
 
-- Fast-paced 6v6 football matches
-- Unique player abilities for each role (Attackers, Defenders, Goalkeeper)
-- Real-time multiplayer support
-- Cross-platform compatibility (Browser and Mobile)
-- Beautiful 3D graphics with Three.js
-- Physics-based gameplay with Cannon.js
-- Responsive controls and UI
+- Real-time multiplayer gameplay
+- Physics-based ball and player interactions
+- Dynamic camera system
+- Goal detection and scoring
+- Special abilities (coming soon)
 
-## Game Modes
+## Tech Stack
 
-- Fun Mode: Casual 6v6 matches
-- League/Tournaments: Competitive brackets with leaderboards
-- Practice Mode: Single-player vs. AI
+- Three.js for 3D graphics
+- Cannon.js for physics simulation
+- Colyseus.js for multiplayer networking
+- Vite for build and development
+- Node.js for server runtime
 
-## Player Roles & Abilities
+## Prerequisites
 
-### Attackers (3)
-- Jiggle: 75% chance to dodge
-- Power Shot: Charge for 6 seconds, high-speed shot with knockback
-- Meteor Strike: Ultimate ability (10 passes to charge)
-
-### Defenders (2)
-- Shield: Defensive barrier
-- Hook: Pull opponents
-- Tackle: Ball-stealing ability
-
-### Goalkeeper (1)
-- Energy Wall: Defensive barrier
-- Super Save: Enhanced save ability
-- Clear: Strong kick to clear the ball
+- Node.js >= 18.0.0
+- npm >= 9.0.0
 
 ## Installation
 
@@ -48,66 +36,45 @@ cd super-slam-football
 npm install
 ```
 
-3. Start the development server:
+## Development
+
+Start the development server:
 ```bash
 npm run dev
 ```
 
-4. Start the client development server:
+The game will be available at `http://localhost:3000`
+
+## Building for Production
+
+Build the project:
 ```bash
-npm run client
+npm run build
 ```
 
-5. Open your browser and navigate to `http://localhost:3000`
-
-## Development
-
-### Project Structure
-
+Start the production server:
+```bash
+npm start
 ```
-src/
-├── client/
-│   ├── game/
-│   │   ├── Game.js
-│   │   ├── Player.js
-│   │   ├── Ball.js
-│   │   ├── Field.js
-│   │   ├── Team.js
-│   │   └── abilities/
-│   │       └── Ability.js
-│   ├── network/
-│   │   └── NetworkManager.js
-│   ├── styles/
-│   │   └── main.css
-│   ├── index.html
-│   └── index.js
-└── server/
-    └── index.js
-```
-
-### Available Scripts
-
-- `npm start`: Start the production server
-- `npm run dev`: Start the development server with hot reloading
-- `npm run client`: Start the client development server
-- `npm run build`: Build the client for production
-- `npm test`: Run tests
 
 ## Controls
 
-- WASD/Arrow Keys: Move player
-- Tab: Switch between players
-- 1-3: Activate abilities
-- Space: Sprint
-- Mouse: Camera control
+- WASD: Move player
+- Space: Jump
+- Mouse: Look around (coming soon)
+- Special abilities (coming soon)
 
-## Technologies Used
+## Project Structure
 
-- Three.js: 3D graphics
-- Cannon.js: Physics engine
-- Socket.IO: Real-time multiplayer
-- Express: Server framework
-- Webpack: Build tool
+```
+src/
+├── client/          # Client-side code
+│   ├── core/       # Core game engine
+│   ├── entities/   # Game entities
+│   ├── assets/     # Game assets
+│   └── utils/      # Utility functions
+└── server/         # Server-side code
+```
 
 ## Contributing
 
@@ -119,10 +86,10 @@ src/
 
 ## License
 
-This project is licensed under the ISC License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
 ## Acknowledgments
 
-- Inspired by Sega Soccer Slam (2002)
-- FIFA series for gameplay mechanics
-- League of Legends and Dota 2 for ability system inspiration 
+- Three.js team for the amazing 3D graphics library
+- Cannon.js team for the physics engine
+- Colyseus.js team for the multiplayer framework 

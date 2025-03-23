@@ -7,22 +7,23 @@ yarn-error.log*
 # Build output
 dist/
 build/
-.cache/
 
 # Environment variables
 .env
 .env.local
 .env.*.local
 
-# IDE and editor files
-.idea/
+# IDE
 .vscode/
+.idea/
 *.swp
 *.swo
+
+# OS
 .DS_Store
 Thumbs.db
 
-# Debug logs
+# Logs
 logs/
 *.log
 
