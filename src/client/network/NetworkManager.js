@@ -1,197 +1,88 @@
-import io from 'socket.io-client';
+import { io } from 'socket.io-client';
+import logger from '../utils/logger';
 
-export class NetworkManager {
-    constructor(game) {
-        this.game = game;
+export default class NetworkManager {
+    constructor() {
         this.socket = null;
-        this.connected = false;
-        this.playerId = null;
-        this.roomId = null;
-        
-        // Network state
-        this.state = {
-            isHost: false,
-            players: new Map(),
-            latency: 0
-        };
-        
-        // Initialize network
-        this.init();
+        this.eventHandlers = new Map();
+        logger.info('NetworkManager initialized');
     }
 
-    init() {
-        // Connect to server
-        this.socket = io('http://localhost:3000');
-        
-        // Setup event listeners
-        this.setupEventListeners();
-    }
-
-    setupEventListeners() {
-        this.socket.on('connect', () => {
-            this.connected = true;
-            console.log('Connected to server');
-        });
-
-        this.socket.on('disconnect', () => {
-            this.connected = false;
-            console.log('Disconnected from server');
-        });
-
-        this.socket.on('playerId', (id) => {
-            this.playerId = id;
-            console.log('Received player ID:', id);
-        });
-
-        this.socket.on('roomId', (id) => {
-            this.roomId = id;
-            console.log('Received room ID:', id);
-        });
-
-        this.socket.on('playerJoined', (playerData) => {
-            this.handlePlayerJoined(playerData);
-        });
-
-        this.socket.on('playerLeft', (playerId) => {
-            this.handlePlayerLeft(playerId);
-        });
-
-        this.socket.on('gameState', (state) => {
-            this.handleGameState(state);
-        });
-
-        this.socket.on('playerUpdate', (update) => {
-            this.handlePlayerUpdate(update);
-        });
-
-        this.socket.on('ballUpdate', (update) => {
-            this.handleBallUpdate(update);
-        });
-
-        this.socket.on('goal', (data) => {
-            this.handleGoal(data);
-        });
-    }
-
-    createRoom() {
-        if (this.connected) {
-            this.socket.emit('createRoom');
-            this.state.isHost = true;
-        }
-    }
-
-    joinRoom(roomId) {
-        if (this.connected) {
-            this.socket.emit('joinRoom', roomId);
-            this.state.isHost = false;
-        }
-    }
-
-    leaveRoom() {
-        if (this.connected && this.roomId) {
-            this.socket.emit('leaveRoom', this.roomId);
-            this.roomId = null;
-            this.state.isHost = false;
-        }
-    }
-
-    sendPlayerUpdate(update) {
-        if (this.connected && this.roomId) {
-            this.socket.emit('playerUpdate', {
-                roomId: this.roomId,
-                playerId: this.playerId,
-                ...update
+    async connect() {
+        try {
+            this.socket = io('http://localhost:3001', {
+                transports: ['websocket'],
+                upgrade: false,
+                reconnection: true,
+                reconnectionAttempts: 5,
+                reconnectionDelay: 1000
             });
-        }
-    }
 
-    sendBallUpdate(update) {
-        if (this.connected && this.roomId) {
-            this.socket.emit('ballUpdate', {
-                roomId: this.roomId,
-                ...update
+            return new Promise((resolve, reject) => {
+                this.socket.on('connect', () => {
+                    logger.info('Socket connected successfully', { id: this.socket.id });
+                    resolve();
+                });
+
+                this.socket.on('connect_error', (error) => {
+                    logger.error('Socket connection error:', error);
+                    reject(error);
+                });
+
+                this.socket.on('disconnect', (reason) => {
+                    logger.warn('Socket disconnected:', reason);
+                });
             });
+        } catch (error) {
+            logger.error('Failed to initialize socket connection:', error);
+            throw error;
         }
     }
 
-    handlePlayerJoined(playerData) {
-        this.state.players.set(playerData.id, playerData);
-        console.log('Player joined:', playerData);
-    }
-
-    handlePlayerLeft(playerId) {
-        this.state.players.delete(playerId);
-        console.log('Player left:', playerId);
-    }
-
-    handleGameState(state) {
-        // Update game state from server
-        this.game.state = state;
-        console.log('Received game state:', state);
-    }
-
-    handlePlayerUpdate(update) {
-        const player = this.state.players.get(update.playerId);
-        if (player) {
-            // Update player position and state
-            player.position.copy(update.position);
-            player.state = update.state;
-            console.log('Received player update:', update);
+    on(event, handler) {
+        try {
+            if (!this.socket) {
+                throw new Error('Socket not initialized');
+            }
+            this.socket.on(event, handler);
+            this.eventHandlers.set(event, handler);
+            logger.debug('Event handler registered:', event);
+        } catch (error) {
+            logger.error('Failed to register event handler:', error);
         }
     }
 
-    handleBallUpdate(update) {
-        // Update ball position and state
-        this.game.ball.mesh.position.copy(update.position);
-        this.game.ball.state = update.state;
-        console.log('Received ball update:', update);
-    }
-
-    handleGoal(data) {
-        // Handle goal scored
-        this.game.scoreGoal(data.team);
-        console.log('Goal scored:', data);
-    }
-
-    startGame() {
-        if (this.connected && this.roomId && this.state.isHost) {
-            this.socket.emit('startGame', this.roomId);
+    emit(event, data) {
+        try {
+            if (!this.socket) {
+                throw new Error('Socket not initialized');
+            }
+            this.socket.emit(event, data);
+            logger.debug('Event emitted:', event, data);
+        } catch (error) {
+            logger.error('Failed to emit event:', error);
         }
-    }
-
-    endGame() {
-        if (this.connected && this.roomId) {
-            this.socket.emit('endGame', this.roomId);
-        }
-    }
-
-    getLatency() {
-        return this.state.latency;
-    }
-
-    isConnected() {
-        return this.connected;
-    }
-
-    isHost() {
-        return this.state.isHost;
-    }
-
-    getPlayerCount() {
-        return this.state.players.size;
-    }
-
-    getPlayers() {
-        return Array.from(this.state.players.values());
     }
 
     disconnect() {
-        if (this.socket) {
-            this.socket.disconnect();
-            this.connected = false;
-            this.playerId = null;
-            this.roomId = null;
-            this.state.players.clear();
+        try {
+            if (this.socket) {
+                this.socket.disconnect();
+                this.eventHandlers.clear();
+                logger.info('Socket disconnected');
+            }
+        } catch (error) {
+            logger.error('Failed to disconnect socket:', error);
         }
+    }
+
+    // Export logs for debugging
+    exportLogs() {
+        return {
+            connectionState: this.socket?.connected,
+            socketId: this.socket?.id,
+            registeredEvents: Array.from(this.eventHandlers.keys()),
+            logs: logger.getLogs().filter(log => log.message.includes('[NetworkManager]'))
+        };
     }
 } 
