@@ -1,29 +1,39 @@
-# Football Special Abilities Game
+# Super Slam Football (SSF)
 
-A multiplayer football game with special abilities, betting system, and AI players. Built with modern web technologies and real-time multiplayer capabilities.
+A multiplayer football game with special abilities, built with Three.js and Cannon.js.
 
 ## Features
 
 ### Core Game Features
 - Real-time multiplayer football gameplay
 - Special abilities system with unique player powers
-- AI player system with advanced decision-making
-- Betting system with odds calculation
 - Physics-based ball and player movement
-
-### Performance Monitoring
-- Real-time performance metrics tracking
-- Memory usage monitoring
-- Performance trend analysis
-- Automated alert system
-- Interactive performance dashboard
+- Modern UI with ability cooldowns and status indicators
+- Mobile-friendly controls
 
 ### Technical Features
-- ES Modules architecture
-- Real-time communication using Colyseus
-- Comprehensive test suite
-- Advanced logging system
-- Performance optimization
+- TypeScript for type safety
+- Three.js for 3D graphics
+- Cannon.js for physics simulation
+- Jest for comprehensive testing
+- Performance monitoring and error tracking
+- Real-time logging system
+
+## Project Structure
+
+```
+src/
+├── client/           # Client-side code
+│   ├── components/   # React components
+│   ├── game/        # Game logic
+│   │   ├── abilities/  # Special abilities
+│   │   ├── entities/   # Game entities (Player, Ball)
+│   │   ├── physics/    # Physics system
+│   │   └── ui/        # UI components
+│   └── utils/       # Utility functions
+├── server/          # Server-side code
+└── shared/          # Shared code between client and server
+```
 
 ## Getting Started
 
@@ -33,10 +43,11 @@ A multiplayer football game with special abilities, betting system, and AI playe
 - Modern web browser
 
 ### Installation
+
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/football-special-abilities.git
-cd football-special-abilities
+git clone https://github.com/Aeell/SSF.git
+cd SSF
 ```
 
 2. Install dependencies:
@@ -51,57 +62,75 @@ npm run dev
 
 4. Open your browser and navigate to `http://localhost:3000`
 
-## Project Structure
+## Development
 
+### Available Scripts
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm test` - Run tests
+- `npm run test:coverage` - Run tests with coverage
+- `npm run lint` - Run linter
+- `npm run format` - Format code with Prettier
+
+### Testing
+The project uses Jest for testing. Tests are located in `__tests__` directories throughout the codebase.
+
+```bash
+# Run all tests
+npm test
+
+# Run tests with coverage
+npm run test:coverage
+
+# Run tests in watch mode
+npm run test:watch
 ```
-src/
-├── client/           # Client-side code
-│   ├── components/   # React components
-│   ├── game/        # Game logic
-│   └── utils/       # Utility functions
-├── server/          # Server-side code
-│   ├── game/        # Game server logic
-│   ├── models/      # Data models
-│   └── utils/       # Utility functions
-└── shared/          # Shared code between client and server
-    ├── constants/   # Shared constants
-    └── types/       # TypeScript type definitions
-```
+
+### Code Style
+- TypeScript for type safety
+- ESLint for code linting
+- Prettier for code formatting
+
+## Game Features
+
+### Special Abilities
+1. Speed Boost
+   - Temporarily increases player movement speed
+   - Cooldown: 5 seconds
+   - Duration: 2 seconds
+
+2. Power Kick
+   - Increases ball kick force
+   - Cooldown: 3 seconds
+   - Duration: 1 second
+
+3. Shield
+   - Provides temporary invincibility
+   - Cooldown: 10 seconds
+   - Duration: 3 seconds
+
+### Controls
+- WASD - Player movement
+- Space - Jump
+- Q - Speed Boost
+- E - Power Kick
+- R - Shield
+
+### Mobile Controls
+- Virtual joystick for movement
+- Touch buttons for abilities
+- Swipe for camera control
 
 ## Performance Monitoring
 
-The project includes a sophisticated performance monitoring system that tracks:
-
-### Metrics
-- Operation durations
+The game includes a sophisticated performance monitoring system that tracks:
+- FPS (Frames Per Second)
 - Memory usage
-- CPU utilization
 - Network latency
-- Frame rates
+- Error rates
+- Player statistics
 
-### Analysis
-- Performance trends
-- Statistical analysis (p95, p99)
-- Memory leak detection
-- Bottleneck identification
-
-### Dashboard
-- Real-time metrics visualization
-- Interactive charts
-- Alert system
-- Historical data analysis
-
-## Testing
-
-### Running Tests
-```bash
-npm test
-```
-
-### Test Coverage
-```bash
-npm run test:coverage
-```
+Access the debug panel in-game by clicking the "Show Debug Panel" button.
 
 ## Contributing
 
@@ -118,33 +147,10 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## Acknowledgments
 
 - Three.js for 3D graphics
-- Colyseus for multiplayer functionality
-- Chart.js for data visualization
+- Cannon.js for physics simulation
 - Jest for testing framework
-
-## Performance Optimization Tips
-
-1. Use the performance monitoring dashboard to identify bottlenecks
-2. Implement proper cleanup in game objects
-3. Optimize network communication
-4. Use object pooling for frequently created objects
-5. Implement proper memory management
+- React for UI components
 
 ## Support
 
-For support, email support@example.com or join our Discord server.
-
-## Roadmap
-
-- [ ] Add more special abilities
-- [ ] Implement tournament system
-- [ ] Add spectator mode
-- [ ] Enhance AI behavior
-- [ ] Add more betting options
-- [ ] Implement achievements system
-- [ ] Add social features
-- [ ] Mobile optimization
-
-## Changelog
-
-See [CHANGELOG.md](CHANGELOG.md) for a list of changes and version history. 
+For support, please open an issue in the GitHub repository or contact the maintainers. 

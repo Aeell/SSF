@@ -132,4 +132,76 @@ afterEach(() => {
 afterAll(() => {
     jest.resetAllMocks();
     jest.restoreAllMocks();
-}); 
+});
+
+// Mock WebGL context
+const mockWebGLContext = {
+    canvas: document.createElement('canvas'),
+    getContext: jest.fn(),
+    getExtension: jest.fn(),
+    createBuffer: jest.fn(),
+    bindBuffer: jest.fn(),
+    bufferData: jest.fn(),
+    createProgram: jest.fn(),
+    createShader: jest.fn(),
+    shaderSource: jest.fn(),
+    compileShader: jest.fn(),
+    attachShader: jest.fn(),
+    linkProgram: jest.fn(),
+    useProgram: jest.fn(),
+    getAttribLocation: jest.fn(),
+    getUniformLocation: jest.fn(),
+    enableVertexAttribArray: jest.fn(),
+    vertexAttribPointer: jest.fn(),
+    drawArrays: jest.fn(),
+    clear: jest.fn(),
+    viewport: jest.fn(),
+};
+
+// Mock Three.js
+jest.mock('three', () => ({
+    Scene: jest.fn(),
+    PerspectiveCamera: jest.fn(),
+    WebGLRenderer: jest.fn(() => ({
+        setSize: jest.fn(),
+        render: jest.fn(),
+        shadowMap: { enabled: true },
+    })),
+    AmbientLight: jest.fn(),
+    DirectionalLight: jest.fn(),
+    Mesh: jest.fn(),
+    BoxGeometry: jest.fn(),
+    SphereGeometry: jest.fn(),
+    MeshStandardMaterial: jest.fn(),
+    Vector3: jest.fn(),
+    Euler: jest.fn(),
+    Quaternion: jest.fn(),
+    Clock: jest.fn(() => ({
+        getDelta: jest.fn(() => 0.016),
+    })),
+}));
+
+// Mock Cannon.js
+jest.mock('cannon-es', () => ({
+    World: jest.fn(),
+    Body: jest.fn(),
+    Box: jest.fn(),
+    Sphere: jest.fn(),
+    Material: jest.fn(),
+    ContactMaterial: jest.fn(),
+    Vec3: jest.fn(),
+    Quaternion: jest.fn(),
+}));
+
+// Mock AudioContext
+class MockAudioContext {
+    constructor() {
+        this.destination = {};
+        this.createBufferSource = jest.fn();
+        this.createGain = jest.fn();
+        this.createAnalyser = jest.fn();
+    }
+    decodeAudioData() {}
+}
+
+global.AudioContext = MockAudioContext; 

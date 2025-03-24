@@ -3,93 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; connect-src 'self' ws: wss: http: https:;">
     <title>Super Slam Football</title>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
     <style>
-        body {
+        * {
             margin: 0;
             padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: #4B0082;
+            color: #FFFFFF;
+            overflow: hidden;
+        }
+
+        #game-container {
+            position: relative;
             width: 100vw;
             height: 100vh;
-            overflow: hidden;
-            background-color: #000;
-            font-family: Arial, sans-serif;
         }
+
         #loading-screen {
-            position: fixed;
+            position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background-color: #000;
-            color: #fff;
+            background-color: #4B0082;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 9999;
+            z-index: 1000;
         }
-        #loading-progress {
-            width: 50%;
-            text-align: center;
+
+        .loading-text {
+            color: #39FF14;
+            font-size: 24px;
+            margin-bottom: 20px;
         }
-        .progress-bar {
-            width: 100%;
+
+        .loading-progress {
+            width: 200px;
             height: 20px;
-            background-color: #333;
-            border-radius: 10px;
-            overflow: hidden;
-            margin-top: 10px;
+            background-color: #000;
+            border: 4px solid #39FF14;
         }
-        .progress-bar-fill {
+
+        .loading-bar {
             width: 0%;
             height: 100%;
-            background-color: #4CAF50;
-            transition: width 0.3s ease-in-out;
+            background-color: #39FF14;
+            transition: width 0.3s ease;
         }
-        #game-container {
+
+        #game-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
             width: 100%;
             height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .hud {
+            position: absolute;
+            padding: 20px;
+            color: #FFFFFF;
+            text-shadow: 2px 2px 0 #000;
+        }
+
+        #score {
+            top: 20px;
+            left: 20px;
+            font-size: 24px;
+        }
+
+        #timer {
+            top: 20px;
+            right: 20px;
+            font-size: 24px;
+        }
+
+        #ability-cooldown {
+            bottom: 20px;
+            left: 20px;
+            font-size: 18px;
+        }
+
+        #mobile-controls {
             display: none;
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            padding: 20px;
+            z-index: 2;
+        }
+
+        @media (max-width: 768px) {
+            #mobile-controls {
+                display: flex;
+                justify-content: space-between;
+            }
         }
     </style>
 </head>
 <body>
-    <div id="loading-screen">
-        <div id="loading-progress">
-            <h2>Loading game assets...</h2>
-            <div class="progress-bar">
-                <div class="progress-bar-fill" id="progress-bar-fill"></div>
+    <div id="game-container">
+        <div id="loading-screen">
+            <div class="loading-text">Loading Super Slam Football...</div>
+            <div class="loading-progress">
+                <div class="loading-bar"></div>
             </div>
-            <p id="loading-text">Initializing...</p>
+        </div>
+        <div id="game-ui">
+            <div id="score" class="hud">Score: 0 - 0</div>
+            <div id="timer" class="hud">Time: 3:00</div>
+            <div id="ability-cooldown" class="hud">Ability Ready!</div>
+        </div>
+        <div id="mobile-controls">
+            <div id="joystick"></div>
+            <div id="action-buttons">
+                <button id="kick-button">Kick</button>
+                <button id="ability-button">Ability</button>
+            </div>
         </div>
     </div>
-    <div id="game-container"></div>
-    <script>
-        // Show loading progress
-        window.addEventListener('load', () => {
-            const loadingBar = document.getElementById('progress-bar-fill');
-            let progress = 0;
-            const interval = setInterval(() => {
-                progress += 5;
-                loadingBar.style.width = `${progress}%`;
-                if (progress >= 100) {
-                    clearInterval(interval);
-                }
-            }, 100);
-        });
-
-        // Handle game load completion
-        window.addEventListener('game-loaded', () => {
-            document.getElementById('loading-screen').style.display = 'none';
-            document.getElementById('game-container').style.display = 'block';
-        });
-
-        // Handle load errors
-        window.addEventListener('game-load-error', (event) => {
-            document.getElementById('loading-text').textContent = 
-                `Error loading game: ${event.detail.message}`;
-            document.getElementById('loading-text').style.color = '#ff4444';
-        });
-    </script>
+    <script type="module" src="./index.js"></script>
 </body>
 </html> 

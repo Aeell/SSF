@@ -1,21 +1,31 @@
 import { Ability } from './Ability';
 
 export class SpeedBoost extends Ability {
-    constructor() {
-        super('speedBoost', 30, 5, 0); // 30s cooldown, 5s duration
-        this.speedMultiplier = 2.0;
+    constructor(player) {
+        super(player, {
+            name: 'Speed Boost',
+            description: 'Temporarily increases movement speed',
+            cooldown: 10, // 10 seconds cooldown
+            duration: 5  // 5 seconds duration
+        });
+        
+        this.speedMultiplier = 1.5; // 50% speed increase
+        this.originalSpeed = player.moveSpeed;
     }
-
-    applyEffect(player) {
-        this.originalSpeed = player.speed;
-        player.speed *= this.speedMultiplier;
-        // Add visual effect
-        player.mesh.material.emissive.set(0x00ff00);
+    
+    applyEffects() {
+        this.player.moveSpeed *= this.speedMultiplier;
+        
+        // Add visual effect (e.g., trail or glow)
+        this.player.mesh.material.emissive.setHex(0x00ff00);
+        this.player.mesh.material.emissiveIntensity = 0.5;
     }
-
-    removeEffect(player) {
-        player.speed = this.originalSpeed;
+    
+    removeEffects() {
+        this.player.moveSpeed = this.originalSpeed;
+        
         // Remove visual effect
-        player.mesh.material.emissive.set(0x000000);
+        this.player.mesh.material.emissive.setHex(0x000000);
+        this.player.mesh.material.emissiveIntensity = 0;
     }
 } 
